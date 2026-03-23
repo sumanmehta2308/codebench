@@ -1,0 +1,20 @@
+# Dependencies (Don't upload these, they are huge!)
+node_modules/
+
+# Build Output (Files generated when you build the app)
+dist/
+build/
+.next/
+
+# Environment Variables (Keep your secrets/API keys safe!)
+.env
+.env.local
+.env.*.local
+# Windows System Garbage
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+# Logs and IDEs
+*.log
+.vscode/
+.idea/

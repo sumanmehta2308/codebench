@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  # 1. Redis Service
+  redis:
+    image: redis
+    container_name: codebench-redis
+    command: redis-server --requirepass "Rx2km0T7Gb1X7DVRXL2ABGhK6WcWEUXt"
+    ports:
+      - "6379:6379"
+    networks:
+      - codebench-network
+
+  # 2. Judge Service (Code Execution)
+  judge0:
+    build: ./Judge
+    container_name: code-judge
+    user: root 
+    privileged: true
+    ports:
+      - "7001:7001"
+    depends_on:
+      - redis
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - codebench_temp:/shared:rw 
+      - ./Judge:/app           # 💡 Live reload for Judge
+      - /app/node_modules
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      - codebench-network
+
+  # 3. Backend Service (Main API & Socket Server)
+  backend:
+    build: ./Backend
+    container_name: codebench-backend
+    user: root 
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - judge0
+    environment:
+      # 💡 Yahan humne Host ka naam 'redis' rakha hai jo service name se match karta hai
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASS=Rx2km0T7Gb1X7DVRXL2ABGhK6WcWEUXt
+      - JUDGE0_URL=http://judge0:7001
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - ./Backend:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+      # node_modules ko mount nahi karte taaki container ka internal install use ho
+      - /app/node_modules
+    networks:
+      - codebench-network
+
+# 🔹 Networks & Volumes
+networks:
+  codebench-network:
+    driver: bridge
+
+volumes:
+  codebench_temp:
+    name: codebench_temp

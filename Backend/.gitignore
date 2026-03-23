@@ -1,0 +1,15 @@
+# 1. Windows System Junk (Stops these from showing up in your Git)
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+
+# 2. Basic Coding Folders (The heavy stuff you don't want to upload)
+node_modules/
+dist/
+build/
+.env
+
+# 3. Simple Logs
+*.log
+npm-debug.log*
