@@ -3,10 +3,12 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const app = express();
 
+const allowedOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    origin: allowedOrigin,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     credentials: true,
   })
 );
