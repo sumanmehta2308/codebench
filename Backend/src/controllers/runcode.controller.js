@@ -7,38 +7,37 @@ const Problem = require("../models/problem.model");
 const Submission = require("../models/submission.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const axios = require("axios");
+const redisClient = require("../db/redis");
 
 /**
  * HELPER: cleanInput
- * Yeh function "A = 2, B = 3" jaise input se text hata kar use "2 3" bana deta hai.
- * Isse C++ ka 'cin' garbage value nahi dega.
  */
 const cleanInput = (str) => {
   if (!str) return "";
-  // Sirf numbers, spaces, aur negative signs ko rakha gaya hai
   return str
     .replace(/[a-zA-Z=,]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 };
+
+/**
+ * 1. RUN CODE (Custom Input)
+ */
 const runCode = asyncHandler(async (req, res) => {
   const { language, code, input } = req.body;
   const userId = req.user?._id.toString();
 
-  // 🔹 Rate Limiter: 1 Minute Cooldown for 'Run' button
   const rateLimitKey = `rl:${userId}:run`;
   const isLocked = await redisClient.get(rateLimitKey);
 
   if (isLocked) {
-    return res.status(429).json(
-      new ApiResponse(429, null, "You can try again after 1 minute.")
-    );
+    return res
+      .status(429)
+      .json(new ApiResponse(429, null, "You can try again after 1 minute."));
   }
 
   try {
     const sanitizedInput = cleanInput(input);
-
-    // Set 60 seconds lock in Redis
     await redisClient.setEx(rateLimitKey, 60, "true");
 
     const response = await axios.post(
@@ -47,27 +46,24 @@ const runCode = asyncHandler(async (req, res) => {
       { timeout: 15000 }
     );
 
-    return res.status(200).json(new ApiResponse(200, response.data.output, "Executed Successfully"));
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, response.data.output, "Executed Successfully")
+      );
   } catch (error) {
     console.error("RUN_CODE_ERROR:", error.message);
-    return res.status(500).json(new ApiResponse(500, error.message, "Execution Error"));
+    return res
+      .status(500)
+      .json(new ApiResponse(500, error.message, "Execution Error"));
   }
 });
 
-module.exports = { runCode };
-/**
- * 1. RUN CODE (Custom Input)
- */
-
-
 /**
  * 2. RUN EXAMPLE CASES (The 'Run' Button)
- * Isme Parallel execution use ki gayi hai speed ke liye.
  */
 const run_example_cases = asyncHandler(async (req, res) => {
   const { language, code, example_cases } = req.body;
-
- // console.log("DEBUG: Received example_cases for processing");
 
   try {
     validateCode(language, code);
@@ -81,11 +77,7 @@ const run_example_cases = asyncHandler(async (req, res) => {
     const res_output = await Promise.all(
       example_cases.map(async (testCase) => {
         try {
-          // FIX: Sanitizing input and using correct variable name 'testCase'
           const sanitizedInput = cleanInput(testCase.input);
-
-          //console.log( `DEBUG: Sending sanitized input to Judge: [${sanitizedInput}]`);
-
           const resp = await axios.post(
             `${process.env.JUDGE0_URL}/execute`,
             {
@@ -107,7 +99,7 @@ const run_example_cases = asyncHandler(async (req, res) => {
             .trim();
 
           return {
-            input: testCase.input, // Display original input on UI
+            input: testCase.input,
             expectedOutput,
             actualOutput,
             isMatch: actualOutput === expectedOutput,
@@ -139,7 +131,6 @@ const run_example_cases = asyncHandler(async (req, res) => {
 
 /**
  * 3. RUN TEST CASES (The 'Submit' Button)
- * Isme sequential execution hai taaki first failure par stop ho sake.
  */
 const runtestcases = asyncHandler(async (req, res) => {
   const { language, problem_id, code } = req.body;
@@ -161,8 +152,9 @@ const runtestcases = asyncHandler(async (req, res) => {
       try {
         const sanitizedInput = cleanInput(testCase.input);
 
+        // ✅ FIXED: Using process.env.JUDGE0_URL instead of hardcoded 'code-judge'
         const resp = await axios.post(
-          "http://code-judge:7001/execute",
+          `${process.env.JUDGE0_URL}/execute`,
           {
             language,
             code,
@@ -202,7 +194,6 @@ const runtestcases = asyncHandler(async (req, res) => {
       }
     }
 
-    // Save to Database
     await Submission.create({
       problem: problem_id,
       madeBy: req.user._id,
@@ -227,4 +218,5 @@ const runtestcases = asyncHandler(async (req, res) => {
       .json(new ApiResponse(500, null, "Failed to process test cases"));
   }
 });
+
 module.exports = { runCode, run_example_cases, runtestcases };

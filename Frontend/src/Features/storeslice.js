@@ -1,7 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { io } from "socket.io-client";
 
-const backendURL = import.meta.env.VITE_BACKEND_URL_FOR_SOCKET;
+const backendURL =import.meta.env.VITE_BACKEND_URL_FOR_SOCKET;
 const socket = io(backendURL);
 
 // 💡 THE FIX: Redux checks localStorage BEFORE the app even loads

@@ -2,12 +2,15 @@ const { Server } = require("socket.io");
 const http = require("http");
 const app = require("../app.js");
 const redisClient = require("../db/redis"); // Redis import presence track karne ke liye
-
 const createSocketServer = () => {
   const server = http.createServer(app);
   const io = new Server(server, {
     cors: {
-      origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+      origin: [
+        process.env.CORS_ORIGIN,
+        "http://localhost:5173",
+        "http://localhost:3000",
+      ],
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -26,9 +29,6 @@ const createSocketServer = () => {
       io.emit("user_presence", { userId, status: "online" });
       console.log(`User ${userId} is now online. Socket: ${socket.id}`);
     }
-
-    console.log("User connected Socket ", socket.id);
-
     socket.on("disconnect", async () => {
       if (userId) {
         // Redis se user ko remove karna
