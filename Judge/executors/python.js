@@ -6,18 +6,15 @@ const { v4: uuidv4 } = require("uuid");
 const runPython = (code, input = "") => {
   return new Promise((resolve, reject) => {
     const jobId = uuidv4();
-    const containerTempDir = path.join("/", "shared", jobId);
+    const containerTempDir = path.join(__dirname, "temp", jobId);
 
     try {
       if (!fs.existsSync(containerTempDir)) {
         fs.mkdirSync(containerTempDir, { recursive: true, mode: 0o777 });
       }
 
-      // FIX: Ensure multi-line strings are preserved and encoded correctly
       const cleanInput = String(input).replace(/\r\n/g, "\n").trim() + "\n";
-
       fs.writeFileSync(path.join(containerTempDir, "main.py"), code, "utf8");
-      // FIX: Explicitly write as utf8 to avoid string corruption in Docker
       fs.writeFileSync(
         path.join(containerTempDir, "input.txt"),
         cleanInput,
@@ -27,20 +24,17 @@ const runPython = (code, input = "") => {
       return reject(`Judge File System Error: ${err.message}`);
     }
 
-    // FIX: Using bash -c ensures the redirection < works consistently
-    const dockerCmd = `docker run --rm \
-      -v codebench_temp:/shared \
-      -w /shared/${jobId} \
-      python:3-slim \
-      bash -c "python3 main.py < input.txt"`;
+    // ✅ Native command (Uses python3 installed in Dockerfile)
+    const nativeCmd = `python3 ${path.join(
+      containerTempDir,
+      "main.py"
+    )} < ${path.join(containerTempDir, "input.txt")}`;
 
-    exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
+    exec(nativeCmd, { timeout: 10000 }, (error, stdout, stderr) => {
       if (fs.existsSync(containerTempDir))
         fs.rmSync(containerTempDir, { recursive: true, force: true });
 
-      if (error) {
-        return resolve(stderr || error.message);
-      }
+      if (error) return resolve(stderr || error.message);
       resolve(stdout);
     });
   });

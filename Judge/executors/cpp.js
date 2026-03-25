@@ -6,18 +6,16 @@ const { v4: uuidv4 } = require("uuid");
 const runCpp = (code, input = "") => {
   return new Promise((resolve, reject) => {
     const jobId = uuidv4();
-    const containerTempDir = path.join("/", "shared", jobId);
+    // ✅ Use internal /app/temp folder
+    const containerTempDir = path.join(__dirname, "temp", jobId);
 
     try {
       if (!fs.existsSync(containerTempDir)) {
         fs.mkdirSync(containerTempDir, { recursive: true, mode: 0o777 });
       }
 
-      // FIX: Sanitize string input and fix line endings for Linux/Docker
       const cleanInput = String(input).replace(/\r\n/g, "\n").trim() + "\n";
-
       fs.writeFileSync(path.join(containerTempDir, "main.cpp"), code, "utf8");
-      // FIX: Explicitly write as utf8
       fs.writeFileSync(
         path.join(containerTempDir, "input.txt"),
         cleanInput,
@@ -27,21 +25,20 @@ const runCpp = (code, input = "") => {
       return reject(`Judge File System Error: ${err.message}`);
     }
 
-    // FIX: Switch to bash -c for better handling of the < redirection
-    const dockerCmd = `docker run --rm \
-      -v codebench_temp:/shared \
-      -w /shared/${jobId} \
-      gcc:latest \
-      bash -c "g++ main.cpp -o out && ./out < input.txt"`;
+    // ✅ Native command (Uses g++ installed in Dockerfile)
+    const nativeCmd = `g++ ${path.join(
+      containerTempDir,
+      "main.cpp"
+    )} -o ${path.join(containerTempDir, "out")} && ${path.join(
+      containerTempDir,
+      "out"
+    )} < ${path.join(containerTempDir, "input.txt")}`;
 
-    exec(dockerCmd, { timeout: 10000 }, (error, stdout, stderr) => {
+    exec(nativeCmd, { timeout: 10000 }, (error, stdout, stderr) => {
       if (fs.existsSync(containerTempDir))
         fs.rmSync(containerTempDir, { recursive: true, force: true });
 
-      if (error) {
-        // Return stderr so the user sees compilation/runtime errors
-        return resolve(stderr || error.message);
-      }
+      if (error) return resolve(stderr || error.message);
       resolve(stdout);
     });
   });
