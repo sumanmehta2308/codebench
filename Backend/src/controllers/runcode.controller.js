@@ -31,11 +31,11 @@ const runCode = asyncHandler(async (req, res) => {
   const isLocked = await redisClient.get(rateLimitKey);
 
   if (isLocked) {
-    return res
-      .status(429)
-      .json(new ApiResponse(429, null, "You can try again after 1 minute."));
+    return res.status(429).json(
+      new ApiResponse(429, null, "You can try again after 1 minute.")
+    );
   }
-
+ console.log("📡 Sending request to Judge at:", process.env.JUDGE0_URL);
   try {
     const sanitizedInput = cleanInput(input);
     await redisClient.setEx(rateLimitKey, 60, "true");
@@ -46,16 +46,10 @@ const runCode = asyncHandler(async (req, res) => {
       { timeout: 15000 }
     );
 
-    return res
-      .status(200)
-      .json(
-        new ApiResponse(200, response.data.output, "Executed Successfully")
-      );
+    return res.status(200).json(new ApiResponse(200, response.data.output, "Executed Successfully"));
   } catch (error) {
     console.error("RUN_CODE_ERROR:", error.message);
-    return res
-      .status(500)
-      .json(new ApiResponse(500, error.message, "Execution Error"));
+    return res.status(500).json(new ApiResponse(500, error.message, "Execution Error"));
   }
 });
 

@@ -5,18 +5,16 @@ const app = express();
 
 // ✅ FIXED: Allowing multiple origins (Local and Production)
 const allowedOrigins = [
-  process.env.CORS_ORIGIN, // https://codebench-olive.vercel.app
-  "http://localhost:5173", // Vite Local
-  "http://localhost:3000", // General Local
-];
+  process.env.CORS_ORIGIN,           // Takes the URL from Render Dashboard
+  "https://codebench-olive.vercel.app", // Hardcoded backup for safety
+  "http://localhost:5173",          // Local Vite
+  "http://localhost:3000",          // Local React
+].filter(Boolean);                  // Removes any empty/null values
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -24,6 +22,7 @@ app.use(
     },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     credentials: true,
+    optionsSuccessStatus: 200, // ✅ ADD THIS LINE
   })
 );
 
