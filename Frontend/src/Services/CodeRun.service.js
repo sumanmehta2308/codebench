@@ -13,7 +13,6 @@ export const runExampleCasesService = async (language, code, example_cases) => {
       },
       body: JSON.stringify(userData),
     });
-
     // 💡 RATE LIMITING CHECK
     if (response.status === 429) {
       toast.error("Too many requests! Please wait a 15 a seconds.");

@@ -104,7 +104,7 @@ const AllProblems = () => {
                   >
                     <td className="px-8 py-5 font-semibold text-gray-200 group-hover:text-yellow-400 transition-colors">
                       <span className="text-gray-600 mr-3 font-mono">
-                        {String((page - 1) * 10 + index + 1).padStart(2, "0")}
+                        {String((page - 1) * 5 + index + 1).padStart(2, "0")}
                       </span>
                       {problem.title}
                     </td>

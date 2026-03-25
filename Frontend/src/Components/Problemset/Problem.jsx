@@ -14,11 +14,11 @@ const difficultyColors = {
   hard: "bg-red-600 text-white",
 };
 
-function Problem() {
+function Problem() 
+{
   const { id } = useParams();
   const [problem, setProblem] = useState(null);
   const [activeTab, setActiveTab] = useState("description");
-
   // BUG FIX: Real-time update trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 

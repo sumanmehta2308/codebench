@@ -5,15 +5,11 @@ const { ApiResponse } = require("../utils/ApiResponse");
 
 const codeExecutionLimiter = rateLimit({
   store: new RedisStore({
-    sendCommand: async (...args) => {
-      if (!redisClient.isOpen) {
-        await redisClient.connect();
-      }
-      return redisClient.sendCommand(args);
-    },
+    // ✅ FIXED: Using the standard call format for Redis v4+
+    sendCommand: (...args) => redisClient.sendCommand(args),
   }),
-  windowMs: 15 * 1000, // 💡 Reduced to 15 seconds for much better UX
-  max: 3, // Allow 3 rapid clicks before blocking
+  windowMs: 15 * 1000,
+  max: 3,
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
@@ -24,8 +20,8 @@ const codeExecutionLimiter = rateLimit({
       );
   },
   keyGenerator: (req) => {
-    // 💡 CRITICAL FIX: Only limit by User ID. If no user, give them a random key so they don't block others
-    return req.user ? `rl:${req.user._id}` : `rl:anon:${Math.random()}`;
+    // ✅ FIXED: Use IP address if User ID is missing to prevent random key spam
+    return req.user ? `rl:${req.user._id}` : `rl:ip:${req.ip}`;
   },
 });
 
