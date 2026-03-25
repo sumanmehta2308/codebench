@@ -1,34 +1,43 @@
-const { User } = require("../models/user.model.js");
+const { User } =require("../models/user.model.js");
 const { ApiError } = require("../utils/ApiError.js");
 const asyncHandler = require("../utils/asyncHandler.js");
 const jwt = require("jsonwebtoken");
 
 const verifyJWT = asyncHandler(async (req, res, next) => {
   try {
-   // const token = req.cookies?.accessToken ||   req.header("Authorization")?.replace("Bearer ", "");
-    //  console.log("COOKIE TOKEN:", req.cookies?.accessToken);
-     // console.log("AUTH HEADER:", req.header("Authorization"));
-   const token =
-     req.cookies?.accessToken ||
-     (req.header("Authorization") &&
-       req.header("Authorization").startsWith("Bearer ") &&
-       req.header("Authorization").replace("Bearer ", ""));
+    // STRONGER TOKEN EXTRACTION: Prioritize Header for Vercel/Render compatibility
+    const token =
+      req.header("Authorization")?.replace("Bearer ", "") ||
+      req.cookies?.accessToken;
+
     if (!token) {
-      throw new ApiError(401, "Unauthorized Request");
+      throw new ApiError(401, "Unauthorized Request: Please Log In");
     }
+
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    //console.log("DECODED TOKEN:", decodedToken);
+
+    // We only need the ID for validation, no need to pull the whole user object yet to save DB queries
     const user = await User.findById(decodedToken?._id).select(
-      "-password -refreshToken"
+      "_id role username"
     );
+
     if (!user) {
-      throw new ApiError(401, "INVALID ACCESS TOKEN");
+      throw new ApiError(401, "Invalid Access Token");
     }
+
     req.user = user;
     next();
   } catch (error) {
-    throw error;
+    // If token expires, send a specific 401 so frontend knows to refresh
+    if (error.name === "TokenExpiredError") {
+      res.status(401).json({
+        success: false,
+        message: "Token Expired",
+        code: "TOKEN_EXPIRED",
+      });
+    } else {
+      throw new ApiError(401, error?.message || "Invalid Token");
+    }
   }
 });
-
 module.exports = { verifyJWT };

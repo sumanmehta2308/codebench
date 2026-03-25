@@ -1,21 +1,20 @@
-const Submission= require("../models/submission.model");
+const Submission = require("../models/submission.model");
 const { ApiResponse } = require("../utils/ApiResponse");
-const asyncHandler = require("../utils/asyncHandler"); // Corrected destructured import
+const asyncHandler = require("../utils/asyncHandler");
 const mongoose = require("mongoose");
 
 const getMySubmissions = asyncHandler(async (req, res) => {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5;
-    const skip = (page - 1) * limit;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
   const { problem_id } = req.body;
-  let match = {
-    madeBy: new mongoose.Types.ObjectId(req.user._id),
-  };
 
-  // Agar problem_id di hai toh filter karo, varna saari dikhao
+  let match = { madeBy: new mongoose.Types.ObjectId(req.user._id) };
+
   if (problem_id && mongoose.Types.ObjectId.isValid(problem_id)) {
     match.problem = new mongoose.Types.ObjectId(problem_id);
   }
+
   const submissions = await Submission.aggregate([
     { $match: match },
     {
@@ -29,6 +28,7 @@ const getMySubmissions = asyncHandler(async (req, res) => {
     },
     { $addFields: { problem: { $first: "$problem" } } },
     { $sort: { createdAt: -1 } },
+    { $skip: skip },
     { $limit: limit },
   ]);
 
@@ -38,18 +38,15 @@ const getMySubmissions = asyncHandler(async (req, res) => {
       new ApiResponse(200, submissions, "Submissions fetched Successfully")
     );
 });
+
 const getSuccessfullySolvedProblems = asyncHandler(async (req, res) => {
-     const page = parseInt(req.query.page) || 1;
-     const limit = parseInt(req.query.limit) || 5;
-     const skip = (page - 1) * limit;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
+
   try {
     const solvedProblems = await Submission.aggregate([
-      {
-        $match: {
-          madeBy: req.user._id,
-          status: true,
-        },
-      },
+      { $match: { madeBy: req.user._id, status: true } },
       { $group: { _id: "$problem" } },
       {
         $lookup: {
@@ -61,13 +58,7 @@ const getSuccessfullySolvedProblems = asyncHandler(async (req, res) => {
         },
       },
       { $unwind: "$problemDetails" },
-      {
-        $project: {
-          _id: 0,
-          problem: "$problemDetails",
-        },
-      },
-      // ✅ pagination
+      { $project: { _id: 0, problem: "$problemDetails" } },
       { $skip: skip },
       { $limit: limit },
     ]);
@@ -78,47 +69,25 @@ const getSuccessfullySolvedProblems = asyncHandler(async (req, res) => {
     return res.status(500).json(new ApiResponse(500, [], "Server Error"));
   }
 });
- const createSubmission = asyncHandler(async (req, res) => {
-   const { problem_id, code, language } = req.body;
 
-   // 🔹 1. Find last submission
-   const lastSubmission = await Submission.findOne({
-     madeBy: req.user._id,
-     problem: problem_id, // per-problem cooldown
-   }).sort({ createdAt: -1 });
-   // 🔹 2. Apply cooldown (20 sec)
-   if (lastSubmission) {
-     const lastTime = new Date(lastSubmission.createdAt).getTime();
-     const currentTime = Date.now();
+const createSubmission = asyncHandler(async (req, res) => {
+  const { problem_id, code, language } = req.body;
 
-     const diff = (currentTime - lastTime) / 1000;
+  // 💡 REMOVED MANUAL 20-SEC COOLDOWN. The Express Rate Limiter handles this globally now.
 
-     if (diff < 20) {
-       return res
-         .status(429)
-         .json(
-           new ApiResponse(
-             429,
-             null,
-             `Try again after ${Math.ceil(20 - diff)} seconds`
-           )
-         );
-     }
-   }
+  const submission = await Submission.create({
+    problem: problem_id,
+    madeBy: req.user._id,
+    code,
+    language,
+    status: false,
+  });
 
-   // 🔹 3. Create submission
-   const submission = await Submission.create({
-     problem: problem_id,
-     madeBy: req.user._id,
-     code,
-     language,
-     status: false,
-   });
+  return res
+    .status(200)
+    .json(new ApiResponse(200, submission, "Submitted successfully"));
+});
 
-   return res
-     .status(200)
-     .json(new ApiResponse(200, submission, "Submitted successfully"));
- });
 module.exports = {
   getMySubmissions,
   getSuccessfullySolvedProblems,

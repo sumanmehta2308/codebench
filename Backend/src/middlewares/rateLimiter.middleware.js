@@ -12,26 +12,20 @@ const codeExecutionLimiter = rateLimit({
       return redisClient.sendCommand(args);
     },
   }),
-  windowMs: 1 * 60 * 1000, // 1 Minute
-  max: 5,
-  // 💡 FIX: Yeh line us lamba IPv6 error/warning ko rokti hai
-  validate: {
-    default: false,
-    xForwardedForHeader: false,
-  },
+  windowMs: 15 * 1000, // 💡 Reduced to 15 seconds for much better UX
+  max: 3, // Allow 3 rapid clicks before blocking
+  standardHeaders: true,
+  legacyHeaders: false,
   handler: (req, res) => {
     res
       .status(429)
       .json(
-        new ApiResponse(
-          429,
-          null,
-          "Too many requests. Please try again after 1 minute."
-        )
+        new ApiResponse(429, null, "Too many requests. Please wait 15 seconds.")
       );
   },
   keyGenerator: (req) => {
-    return req.user?._id?.toString() || req.ip;
+    // 💡 CRITICAL FIX: Only limit by User ID. If no user, give them a random key so they don't block others
+    return req.user ? `rl:${req.user._id}` : `rl:anon:${Math.random()}`;
   },
 });
 

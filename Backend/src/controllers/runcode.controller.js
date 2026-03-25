@@ -1,55 +1,44 @@
 const asyncHandler = require("../utils/asyncHandler");
-const {
-  validateCode,
-  validateInput,
-} = require("../middlewares/validatecode.middleware");
+const { validateCode } = require("../middlewares/validatecode.middleware");
 const Problem = require("../models/problem.model");
 const Submission = require("../models/submission.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const axios = require("axios");
-const redisClient = require("../db/redis");
 
 /**
- * HELPER: cleanInput
+ * HELPER: cleanInput - Optimized Regex
  */
 const cleanInput = (str) => {
   if (!str) return "";
-  return str
-    .replace(/[a-zA-Z=,]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const numbers = str.match(/-?\d+/g);
+  return numbers ? numbers.join(" ") : "";
 };
 
 /**
  * 1. RUN CODE (Custom Input)
  */
 const runCode = asyncHandler(async (req, res) => {
+  console.log(`🚀 [RUN_CODE] User ${req.user?._id} triggered execution.`);
   const { language, code, input } = req.body;
-  const userId = req.user?._id.toString();
 
-  const rateLimitKey = `rl:${userId}:run`;
-  const isLocked = await redisClient.get(rateLimitKey);
-
-  if (isLocked) {
-    return res.status(429).json(
-      new ApiResponse(429, null, "You can try again after 1 minute.")
-    );
-  }
- console.log("📡 Sending request to Judge at:", process.env.JUDGE0_URL);
   try {
     const sanitizedInput = cleanInput(input);
-    await redisClient.setEx(rateLimitKey, 60, "true");
-
     const response = await axios.post(
       `${process.env.JUDGE0_URL}/execute`,
       { language, code, input: sanitizedInput },
-      { timeout: 15000 }
+      { timeout: 30000 } // Safe timeout for Render
     );
 
-    return res.status(200).json(new ApiResponse(200, response.data.output, "Executed Successfully"));
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, response.data.output, "Executed Successfully")
+      );
   } catch (error) {
-    console.error("RUN_CODE_ERROR:", error.message);
-    return res.status(500).json(new ApiResponse(500, error.message, "Execution Error"));
+    console.error("❌ RUN_CODE_ERROR:", error.message);
+    return res
+      .status(500)
+      .json(new ApiResponse(500, error.message, "Execution Error"));
   }
 });
 
@@ -57,6 +46,9 @@ const runCode = asyncHandler(async (req, res) => {
  * 2. RUN EXAMPLE CASES (The 'Run' Button)
  */
 const run_example_cases = asyncHandler(async (req, res) => {
+  console.log(
+    `🚀 [RUN_EXAMPLES] User ${req.user?._id} triggered example cases.`
+  );
   const { language, code, example_cases } = req.body;
 
   try {
@@ -74,19 +66,14 @@ const run_example_cases = asyncHandler(async (req, res) => {
           const sanitizedInput = cleanInput(testCase.input);
           const resp = await axios.post(
             `${process.env.JUDGE0_URL}/execute`,
-            {
-              language,
-              code,
-              input: sanitizedInput,
-            },
-            { timeout: 15000 }
+            { language, code, input: sanitizedInput },
+            { timeout: 30000 }
           );
 
           const actualOutput = (resp.data.output || "")
             .toString()
             .replace(/\r/g, "")
             .trim();
-
           const expectedOutput = (testCase.output || "")
             .toString()
             .replace(/\r/g, "")
@@ -116,7 +103,7 @@ const run_example_cases = asyncHandler(async (req, res) => {
         new ApiResponse(200, res_output, "Example cases executed successfully")
       );
   } catch (error) {
-    console.error("EXAMPLE_CASES_ERROR:", error.message);
+    console.error("❌ EXAMPLE_CASES_ERROR:", error.message);
     return res
       .status(500)
       .json(new ApiResponse(500, null, "Internal Server error"));
@@ -124,9 +111,12 @@ const run_example_cases = asyncHandler(async (req, res) => {
 });
 
 /**
- * 3. RUN TEST CASES (The 'Submit' Button)
+ * 3. RUN TEST CASES (The 'Submit' Button) - 🔥 NOW USES PROMISE.ALL FOR SPEED
  */
 const runtestcases = asyncHandler(async (req, res) => {
+  console.log(
+    `🚀 [SUBMIT_CODE] User ${req.user?._id} submitting problem ${req.body.problem_id}.`
+  );
   const { language, problem_id, code } = req.body;
 
   try {
@@ -142,49 +132,49 @@ const runtestcases = asyncHandler(async (req, res) => {
     let failedTestCase = null;
     let isSuccess = true;
 
-    for (const testCase of problem.test_cases) {
-      try {
+    // 🔥 Parallel Execution: Run all test cases at the same time
+    const testResults = await Promise.allSettled(
+      problem.test_cases.map(async (testCase) => {
         const sanitizedInput = cleanInput(testCase.input);
-
-        // ✅ FIXED: Using process.env.JUDGE0_URL instead of hardcoded 'code-judge'
         const resp = await axios.post(
           `${process.env.JUDGE0_URL}/execute`,
-          {
-            language,
-            code,
-            input: sanitizedInput,
-          },
-          { timeout: 15000 }
+          { language, code, input: sanitizedInput },
+          { timeout: 30000 }
         );
 
         const actualOutput = (resp.data.output || "")
           .toString()
           .replace(/\r/g, "")
           .trim();
-
         const expectedOutput = testCase.output
           .toString()
           .replace(/\r/g, "")
           .trim();
 
         if (actualOutput !== expectedOutput) {
-          failedTestCase = {
+          throw {
             input: testCase.input,
             actualOutput,
             expectedOutput,
             status: "Wrong Answer",
           };
-          isSuccess = false;
-          break;
         }
-      } catch (err) {
+        return true;
+      })
+    );
+
+    // Check if any promise failed (Wrong Answer or Runtime Error)
+    for (const result of testResults) {
+      if (result.status === "rejected") {
         isSuccess = false;
-        failedTestCase = {
-          input: testCase.input,
-          status: "Runtime Error",
-          error: err.response?.data?.error || err.message,
-        };
-        break;
+        failedTestCase = result.reason.status
+          ? result.reason
+          : {
+              input: "Hidden Test Case",
+              status: "Runtime Error",
+              error: result.reason.message,
+            };
+        break; // Stop checking after first failure
       }
     }
 
@@ -206,7 +196,7 @@ const runtestcases = asyncHandler(async (req, res) => {
         )
       );
   } catch (error) {
-    console.error("SUBMISSION_CONTROLLER_ERROR:", error.message);
+    console.error("❌ SUBMISSION_CONTROLLER_ERROR:", error.message);
     return res
       .status(500)
       .json(new ApiResponse(500, null, "Failed to process test cases"));

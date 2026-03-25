@@ -1,53 +1,39 @@
 version: "3.9"
 
 services:
-  # 1. Judge Service (Code Execution)
+  # 1. Judge Service (Native Code Execution)
   judge0:
     build: ./Judge
     container_name: code-judge
-    user: root
-    privileged: true
     ports:
       - "7001:7001"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - codebench_temp:/shared:rw
       - ./Judge:/app
       - /app/node_modules
     env_file:
       - ./Backend/.env
-    environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
     networks:
       codebench-network:
-         aliases:
-          - code-judge  # Now 'code-judge' will work as a URL
+        aliases:
+          - code-judge # Now 'code-judge' works as a URL
 
   # 2. Backend Service (Main API & Socket Server)
   backend:
     build: ./Backend
     container_name: codebench-backend
-    user: root
     ports:
       - "8000:8000"
     depends_on:
       - judge0
     volumes:
       - ./Backend:/app
-      - /var/run/docker.sock:/var/run/docker.sock
       - /app/node_modules
     env_file:
       - ./Backend/.env
-    environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
     networks:
       - codebench-network
 
-# 🔹 Networks & Volumes
+# 🔹 Networks (Volumes removed since Judge uses its own /temp folder now)
 networks:
   codebench-network:
     driver: bridge
-
-volumes:
-  codebench_temp:
-    name: codebench_temp

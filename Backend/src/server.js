@@ -14,7 +14,6 @@ const startServer = async () => {
       await redisClient.connect();
       console.log("✅ Redis Connection Verified");
     }
-
     // 2. Connect to MongoDB
     await connectDB();
     console.log("✅ MongoDB Connected");

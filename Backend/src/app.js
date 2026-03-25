@@ -5,10 +5,11 @@ const app = express();
 
 // ✅ FIXED: Allowing multiple origins (Local and Production)
 const allowedOrigins = [
-  process.env.CORS_ORIGIN,           // Takes the URL from Render Dashboard
-  "https://codebench-olive.vercel.app", // Hardcoded backup for safety
-  "http://localhost:5173",          // Local Vite
-  "http://localhost:3000",          // Local React
+  // Takes the URL from Render Dashboard
+  "https://codebench-olive.vercel.app",
+  process.env.CORS_ORIGIN, // Hardcoded backup for safety
+  "http://localhost:5173", // Local Vite
+  "http://localhost:3000", // Local React
 ].filter(Boolean);                  // Removes any empty/null values
 
 app.use(
