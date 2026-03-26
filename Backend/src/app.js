@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const app = express();
-
+app.set("trust proxy", 1);
 // ✅ FIXED: Allowing multiple origins (Local and Production)
 const allowedOrigins = [
   // Takes the URL from Render Dashboard

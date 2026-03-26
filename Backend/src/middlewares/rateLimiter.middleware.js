@@ -1,3 +1,4 @@
+// rateLimiter.middleware.js
 const rateLimit = require("express-rate-limit");
 const RedisStore = require("rate-limit-redis").default;
 const redisClient = require("../db/redis");
@@ -5,11 +6,11 @@ const { ApiResponse } = require("../utils/ApiResponse");
 
 const codeExecutionLimiter = rateLimit({
   store: new RedisStore({
-    // ✅ FIXED: Using the standard call format for Redis v4+
+    // ✅ Direct command use karo, reconnect logic server.js mein handle ho rahi hai
     sendCommand: (...args) => redisClient.sendCommand(args),
   }),
   windowMs: 15 * 1000,
-  max: 3,
+  max: 5, // 💡 Testing ke liye limit thodi badha di hai
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
@@ -19,10 +20,10 @@ const codeExecutionLimiter = rateLimit({
         new ApiResponse(429, null, "Too many requests. Please wait 15 seconds.")
       );
   },
+  // rateLimiter.middleware.js
   keyGenerator: (req) => {
-    // ✅ FIXED: Use IP address if User ID is missing to prevent random key spam
-    return req.user ? `rl:${req.user._id}` : `rl:ip:${req.ip}`;
+    // ✅ FIX: Remove the "rl:" prefix. The RedisStore adds it automatically.
+    return req.user ? req.user._id.toString() : req.ip;
   },
 });
-
 module.exports = { codeExecutionLimiter };
