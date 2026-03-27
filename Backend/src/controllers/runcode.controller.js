@@ -5,6 +5,7 @@ const Submission = require("../models/submission.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const axios = require("axios");
 
+// Cleans up the input string to match what the compiler expects
 const cleanInput = (str) => {
   if (!str) return "";
   const numbers = str.match(/-?\d+/g);
@@ -14,16 +15,40 @@ const cleanInput = (str) => {
 // 💡 THE FIX: A delay function to force the loop to pause and bypass the 429 Rate Limit
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// 💡 THE SHIELD: This function intercepts 429 errors from Render's Proxy and automatically retries.
+// It waits 2 seconds, then 4 seconds, etc., so the frontend never sees a crash.
+const executeCodeWithRetry = async (language, code, input, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await axios.post(
+        `${process.env.JUDGE0_URL}/execute`,
+        { language, code, input },
+        { timeout: 60000 } // Keep at 60s for cloud cold starts
+      );
+      return response; // Success! Return immediately.
+    } catch (error) {
+      // If it's a 429 Rate Limit AND we haven't run out of retries...
+      if (error.response && error.response.status === 429 && i < retries - 1) {
+        console.warn(
+          `[429 Caught] Judge is busy. Retrying in ${2 * (i + 1)} seconds...`
+        );
+        await delay(2000 * (i + 1)); // Wait 2s, then 4s, then try again
+        continue;
+      }
+      // If it's a different error (like a syntax error) or we are out of retries, throw it.
+      throw error;
+    }
+  }
+};
+
 // 1. RUN CODE (Custom Input)
 const runCode = asyncHandler(async (req, res) => {
   const { language, code, input } = req.body;
   try {
     const sanitizedInput = cleanInput(input);
-    const response = await axios.post(
-      `${process.env.JUDGE0_URL}/execute`,
-      { language, code, input: sanitizedInput },
-      { timeout: 60000 } // Keep at 60s for cold starts
-    );
+
+    // Using the shield function for a single run
+    const response = await executeCodeWithRetry(language, code, sanitizedInput);
 
     return res
       .status(200)
@@ -52,15 +77,13 @@ const run_example_cases = asyncHandler(async (req, res) => {
 
     const res_output = [];
 
-    // Sequential Execution with a enforced delay
+    // Sequential Execution
     for (const testCase of example_cases) {
       try {
         const sanitizedInput = cleanInput(testCase.input);
-        const resp = await axios.post(
-          `${process.env.JUDGE0_URL}/execute`,
-          { language, code, input: sanitizedInput },
-          { timeout: 60000 }
-        );
+
+        // Using the shield function
+        const resp = await executeCodeWithRetry(language, code, sanitizedInput);
 
         const actualOutput = (resp.data.output || "")
           .toString()
@@ -87,8 +110,8 @@ const run_example_cases = asyncHandler(async (req, res) => {
         });
       }
 
-      // 💡 THROTTLE: Wait 1.2 seconds before firing the next test case
-      await delay(1200);
+      // 💡 THROTTLE: Wait 1.5 seconds before firing the next test case to prevent proxy blocks
+      await delay(1500);
     }
 
     return res
@@ -120,14 +143,13 @@ const runtestcases = asyncHandler(async (req, res) => {
     let failedTestCase = null;
     let isSuccess = true;
 
+    // Sequential Execution for Hidden Tests
     for (const testCase of problem.test_cases) {
       try {
         const sanitizedInput = cleanInput(testCase.input);
-        const resp = await axios.post(
-          `${process.env.JUDGE0_URL}/execute`,
-          { language, code, input: sanitizedInput },
-          { timeout: 60000 }
-        );
+
+        // Using the shield function
+        const resp = await executeCodeWithRetry(language, code, sanitizedInput);
 
         const actualOutput = (resp.data.output || "")
           .toString()
@@ -158,10 +180,11 @@ const runtestcases = asyncHandler(async (req, res) => {
         break;
       }
 
-      // 💡 THROTTLE: Wait 1.2 seconds before firing the next test case
-      await delay(1200);
+      // 💡 THROTTLE: Wait 1.5 seconds before firing the next test case
+      await delay(1500);
     }
 
+    // Save to database
     await Submission.create({
       problem: problem_id,
       madeBy: req.user._id,
