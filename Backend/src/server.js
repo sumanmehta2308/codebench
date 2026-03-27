@@ -1,6 +1,5 @@
-// server.js
 require("dotenv").config();
-const cron = require("node-cron"); // ✅ Added node-cron
+const cron = require("node-cron");
 const connectDB = require("./db/index");
 const redisClient = require("./db/redis");
 const createSocketServer = require("./SocketIo/SocketIo");
@@ -8,46 +7,48 @@ const app = require("./app");
 
 const server = createSocketServer(app);
 
-// ✅ NEW: Redis Keep-Alive Function
 const startRedisKeepAlive = () => {
-  // This runs every day at 00:00 (Midnight)
   cron.schedule("0 0 * * *", async () => {
     try {
       if (redisClient.isOpen) {
         const status = await redisClient.ping();
-        console.log(`Redis Keep-Alive (Midnight Ping): ${status}`);
+        console.log(`Redis Keep-Alive: ${status}`);
       }
     } catch (err) {
-      console.error("Redis Keep-Alive Ping Failed:", err.message);
+      console.error("Redis Keep-Alive Failed:", err.message);
     }
   });
-  console.log("Redis Keep-Alive Task Scheduled for 00:00 Daily");
 };
 
 const startServer = async () => {
   try {
-    // 1. Ensure Redis is connected
+    // 1. Connect Redis first (Rate limiter depends on this!)
     if (!redisClient.isOpen) {
       await redisClient.connect();
-      console.log(" Redis Connection Verified");
+      console.log("✅ Redis Connected");
     }
 
-    // 2. Connect to MongoDB
+    // 2. Connect MongoDB
     await connectDB();
-    console.log("MongoDB Connected");
+    console.log("✅ MongoDB Connected");
 
     const port = process.env.PORT || 8000;
 
-    // 3. Start the Server
-    server.listen(port, "0.0.0.0", () => {
-      console.log(` CodeBench Server running at: http://localhost:${port}`);
-
-      // Start the Keep-Alive Job here
+    // 3. Start Server (Removed "0.0.0.0" to let Render handle binding)
+    server.listen(port, () => {
+      console.log(`🚀 Server running on port: ${port}`);
       startRedisKeepAlive();
     });
   } catch (err) {
-    console.error(" Server startup failed:", err);
+    console.error("❌ Server startup failed:", err);
     process.exit(1);
   }
 };
+
+// Handle unexpected errors
+process.on("unhandledRejection", (err) => {
+  console.log("Unhandled Rejection:", err);
+  // Don't kill the server, just log it
+});
+
 startServer();

@@ -2,15 +2,16 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const app = express();
+
+// ✅ FIX 429 BUG: Must be at the top to let middlewares see the real User IP
 app.set("trust proxy", 1);
-// ✅ FIXED: Allowing multiple origins (Local and Production)
+
 const allowedOrigins = [
-  // Takes the URL from Render Dashboard
   "https://codebench-olive.vercel.app",
-  process.env.CORS_ORIGIN, // Hardcoded backup for safety
-  "http://localhost:5173", // Local Vite
-  "http://localhost:3000", // Local React
-].filter(Boolean);                  // Removes any empty/null values
+  process.env.CORS_ORIGIN,
+  "http://localhost:5173",
+  "http://localhost:3000",
+].filter(Boolean);
 
 app.use(
   cors({
@@ -23,16 +24,16 @@ app.use(
     },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     credentials: true,
-    optionsSuccessStatus: 200, // ✅ ADD THIS LINE
+    optionsSuccessStatus: 200,
   })
 );
 
-app.use(express.json({ limit: "16kb" }));
-app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.json({ limit: "64kb" }));
+app.use(express.urlencoded({ extended: true, limit: "64kb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-// Import routes
+// Routes
 const userRouter = require("./routes/user.routes");
 const tweetRouter = require("./routes/tweet.routes");
 const problemRouter = require("./routes/problem.routes");
@@ -41,7 +42,6 @@ const submissionRouter = require("./routes/submission.routes");
 const aiRouter = require("./routes/ai.routes");
 const contestRouter = require("./routes/contest.routes");
 
-// Routes Declaration
 app.use("/users", userRouter);
 app.use("/tweet", tweetRouter);
 app.use("/problem", problemRouter);
@@ -50,5 +50,4 @@ app.use("/submissions", submissionRouter);
 app.use("/ai", aiRouter);
 app.use("/contests", contestRouter);
 
-// Export app
 module.exports = app;
