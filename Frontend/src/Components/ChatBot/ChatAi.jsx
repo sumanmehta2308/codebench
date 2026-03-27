@@ -32,11 +32,20 @@ const ChatAi = ({ problem }) => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/ai/chat`, {
-        message: userMessage.text,
-        problemTitle: problem.title,
-        problemDescription: problem.description,
-      });
+      const token = localStorage.getItem("accessToken");
+      const response = await axios.post(
+        `${BACKEND_URL}/ai/chat`,
+        {
+          message: userMessage.text,
+          problemTitle: problem.title,
+          problemDescription: problem.description,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       setMessages((prev) => [
         ...prev,

@@ -28,7 +28,7 @@ const executeCodeWithRetry = async (language, code, input, retries = 3) => {
         `${process.env.JUDGE0_URL}/execute`,
         { language, code, input },
         {
-          timeout: 30000, // 🚀 Reduced timeout for faster failure
+          timeout: 30000,
           httpAgent,
           httpsAgent,
           headers: {
@@ -40,9 +40,10 @@ const executeCodeWithRetry = async (language, code, input, retries = 3) => {
       );
       return response;
     } catch (error) {
-      // Only delay if we hit a 429
       if (error.response?.status === 429 && i < retries - 1) {
-        console.warn(`[429] Retry ${i + 1}... waiting 2s`);
+        console.warn(
+          `[429] Cloud Firewall Block. Retry ${i + 1}... waiting 2s`
+        );
         await delay(2000);
         continue;
       }
@@ -72,7 +73,7 @@ const runCode = asyncHandler(async (req, res) => {
   }
 });
 
-// 2. RUN EXAMPLE CASES (Fast Loop)
+// 2. RUN EXAMPLE CASES (Paced Loop)
 const run_example_cases = asyncHandler(async (req, res) => {
   const { language, code, example_cases } = req.body;
   try {
@@ -104,7 +105,8 @@ const run_example_cases = asyncHandler(async (req, res) => {
           isMatch: false,
         });
       }
-      await delay(100); // ⚡ Fast 100ms breath
+      // 🛡️ FIX: Increased delay to 350ms to bypass global cloud rate limits
+      await delay(350);
     }
 
     return res
@@ -119,7 +121,7 @@ const run_example_cases = asyncHandler(async (req, res) => {
   }
 });
 
-// 3. RUN TEST CASES (Fast Loop)
+// 3. RUN TEST CASES (Paced Loop)
 const runtestcases = asyncHandler(async (req, res) => {
   const { language, problem_id, code } = req.body;
   try {
@@ -157,7 +159,8 @@ const runtestcases = asyncHandler(async (req, res) => {
         };
         break;
       }
-      await delay(100); // ⚡ Fast 100ms breath
+      // 🛡️ FIX: Increased delay to 350ms to bypass global cloud rate limits
+      await delay(350);
     }
 
     await Submission.create({

@@ -2,10 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const app = express();
-
-// ✅ FIX 429 BUG: Must be at the top to let middlewares see the real User IP
+// FIX 429 BUG: Must be at the top to let middlewares see the real User IP
 app.set("trust proxy", 1);
-
 const allowedOrigins = [
   "https://codebench-olive.vercel.app",
   process.env.CORS_ORIGIN,

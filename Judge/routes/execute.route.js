@@ -1,15 +1,10 @@
 const express = require("express");
 const router = express.Router();
-const {
-  codeExecutionLimiter,
-} = require("../middlewares/rateLimiter.middleware.js");
 const { runC } = require("../executors/c.js");
 const { runPython } = require("../executors/python.js");
 const { runCpp } = require("../executors/cpp.js");
 const { runJava } = require("../executors/java.js");
-
-// ✅ Middleware applied here
-router.post("/execute", codeExecutionLimiter, async (req, res) => {
+router.post("/execute", async (req, res) => {
   const { language, code, input } = req.body;
 
   if (!code || !language) {

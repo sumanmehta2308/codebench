@@ -1,14 +1,20 @@
 require("dotenv").config();
 const { createClient } = require("redis");
 
+// FIX: This URL format is REQUIRED for RedisLabs to connect properly.
+// Notice the empty space between // and : (this sends a blank username)
+const redisUrl = `redis://:${process.env.REDIS_PASS}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`;
+
 const redisClient = createClient({
-  password: process.env.REDIS_PASS,
+  url: redisUrl,
   socket: {
-    host: process.env.REDIS_HOST || "redis",
-    port: Number(process.env.REDIS_PORT) || 6379,
+    // Fail faster so your server doesn't hang forever
     reconnectStrategy: (retries) => {
-      if (retries > 10) return new Error("Redis connection failed");
-      return Math.min(retries * 50, 2000);
+      if (retries > 5) {
+        console.error("Redis reconnect strategy failed after 5 attempts.");
+        return new Error("Redis connection failed");
+      }
+      return Math.min(retries * 500, 2000);
     },
   },
 });
@@ -19,5 +25,4 @@ redisClient.on("connect", () =>
 redisClient.on("ready", () => console.log("✅ Redis authenticated and ready!"));
 redisClient.on("error", (err) => console.error("❌ Redis error:", err.message));
 
-// Note: Connection is handled in server.js to ensure order
 module.exports = redisClient;
