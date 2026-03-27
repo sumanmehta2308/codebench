@@ -7,13 +7,21 @@ const getMySubmissions = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 5;
   const skip = (page - 1) * limit;
-  const { problem_id } = req.body;
 
-  let match = { madeBy: new mongoose.Types.ObjectId(req.user._id) };
+  // 💡 BUG FIX 1: Check both body and query for problem_id to ensure it's always caught
+  const problem_id = req.body.problem_id || req.query.problem_id;
+
+  // 💡 BUG FIX 2: Safely convert the user ID to a string before wrapping it in ObjectId
+  // to prevent Mongoose BSONTypeErrors
+  let match = { madeBy: new mongoose.Types.ObjectId(req.user._id.toString()) };
 
   if (problem_id && mongoose.Types.ObjectId.isValid(problem_id)) {
     match.problem = new mongoose.Types.ObjectId(problem_id);
   }
+
+  // 💡 BUG FIX 3: Calculate total count to enable accurate pagination on the frontend
+  const totalCount = await Submission.countDocuments(match);
+  const totalPages = Math.ceil(totalCount / limit);
 
   const submissions = await Submission.aggregate([
     { $match: match },
@@ -27,16 +35,25 @@ const getMySubmissions = asyncHandler(async (req, res) => {
       },
     },
     { $addFields: { problem: { $first: "$problem" } } },
-    { $sort: { createdAt: -1 } },
+    { $sort: { createdAt: -1 } }, // Ensures the newest submission is always at the top
     { $skip: skip },
     { $limit: limit },
   ]);
 
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, submissions, "Submissions fetched Successfully")
-    );
+  // 💡 BUG FIX 4: Return an Object { submissions, totalPages } instead of a raw array.
+  // This matches your Submissions.jsx frontend condition perfectly!
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        submissions,
+        totalPages,
+        currentPage: page,
+        totalCount,
+      },
+      "Submissions fetched Successfully"
+    )
+  );
 });
 
 const getSuccessfullySolvedProblems = asyncHandler(async (req, res) => {
@@ -72,8 +89,6 @@ const getSuccessfullySolvedProblems = asyncHandler(async (req, res) => {
 
 const createSubmission = asyncHandler(async (req, res) => {
   const { problem_id, code, language } = req.body;
-
-  // 💡 REMOVED MANUAL 20-SEC COOLDOWN. The Express Rate Limiter handles this globally now.
 
   const submission = await Submission.create({
     problem: problem_id,

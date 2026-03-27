@@ -4,22 +4,25 @@ const Problem = require("../models/problem.model");
 const Submission = require("../models/submission.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const axios = require("axios");
+
 const cleanInput = (str) => {
   if (!str) return "";
   const numbers = str.match(/-?\d+/g);
   return numbers ? numbers.join(" ") : "";
 };
 
- // 1. RUN CODE (Custom Input)
+// 💡 THE FIX: A delay function to force the loop to pause and bypass the 429 Rate Limit
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// 1. RUN CODE (Custom Input)
 const runCode = asyncHandler(async (req, res) => {
-  console.log(`[RUN_CODE] User ${req.user?._id} triggered execution.`);
   const { language, code, input } = req.body;
   try {
     const sanitizedInput = cleanInput(input);
     const response = await axios.post(
       `${process.env.JUDGE0_URL}/execute`,
       { language, code, input: sanitizedInput },
-      { timeout: 30000 }
+      { timeout: 60000 } // Keep at 60s for cold starts
     );
 
     return res
@@ -28,21 +31,14 @@ const runCode = asyncHandler(async (req, res) => {
         new ApiResponse(200, response.data.output, "Executed Successfully")
       );
   } catch (error) {
-    console.error(" RUN_CODE_ERROR:", error.message);
     return res
       .status(500)
       .json(new ApiResponse(500, error.message, "Execution Error"));
   }
 });
 
-/*
-  2. RUN EXAMPLE CASES (The 'Run' Button)
-   FIXED: Removed Promise.all() to prevent 429 Rate Limiting
- */
+// 2. RUN EXAMPLE CASES (The 'Run' Button)
 const run_example_cases = asyncHandler(async (req, res) => {
-  console.log(
-    `🚀 [RUN_EXAMPLES] User ${req.user?._id} triggered example cases.`
-  );
   const { language, code, example_cases } = req.body;
 
   try {
@@ -56,14 +52,14 @@ const run_example_cases = asyncHandler(async (req, res) => {
 
     const res_output = [];
 
-    //  Sequential Execution: Wait for each test case to finish
+    // Sequential Execution with a enforced delay
     for (const testCase of example_cases) {
       try {
         const sanitizedInput = cleanInput(testCase.input);
         const resp = await axios.post(
           `${process.env.JUDGE0_URL}/execute`,
           { language, code, input: sanitizedInput },
-          { timeout: 30000 }
+          { timeout: 60000 }
         );
 
         const actualOutput = (resp.data.output || "")
@@ -90,6 +86,9 @@ const run_example_cases = asyncHandler(async (req, res) => {
           isMatch: false,
         });
       }
+
+      // 💡 THROTTLE: Wait 1.2 seconds before firing the next test case
+      await delay(1200);
     }
 
     return res
@@ -98,21 +97,14 @@ const run_example_cases = asyncHandler(async (req, res) => {
         new ApiResponse(200, res_output, "Example cases executed successfully")
       );
   } catch (error) {
-    console.error("EXAMPLE_CASES_ERROR:", error.message);
     return res
       .status(500)
       .json(new ApiResponse(500, null, "Internal Server error"));
   }
 });
 
-/**
- * 3. RUN TEST CASES (The 'Submit' Button)
- * 🛠️ FIXED: Removed Promise.allSettled() to prevent 429 Rate Limiting
- */
+// 3. RUN TEST CASES (The 'Submit' Button)
 const runtestcases = asyncHandler(async (req, res) => {
-  console.log(
-    `[SUBMIT_CODE] User ${req.user?._id} submitting problem ${req.body.problem_id}.`
-  );
   const { language, problem_id, code } = req.body;
 
   try {
@@ -128,14 +120,13 @@ const runtestcases = asyncHandler(async (req, res) => {
     let failedTestCase = null;
     let isSuccess = true;
 
-    // 🔥 Sequential Execution: Crucial for Judge0 stability on Render
     for (const testCase of problem.test_cases) {
       try {
         const sanitizedInput = cleanInput(testCase.input);
         const resp = await axios.post(
           `${process.env.JUDGE0_URL}/execute`,
           { language, code, input: sanitizedInput },
-          { timeout: 30000 }
+          { timeout: 60000 }
         );
 
         const actualOutput = (resp.data.output || "")
@@ -155,7 +146,7 @@ const runtestcases = asyncHandler(async (req, res) => {
             expectedOutput,
             status: "Wrong Answer",
           };
-          break; // Stop checking after first failure to save resources
+          break; // Stop checking after first failure
         }
       } catch (err) {
         isSuccess = false;
@@ -164,8 +155,11 @@ const runtestcases = asyncHandler(async (req, res) => {
           status: "Runtime Error",
           error: err.response?.data?.error || err.message,
         };
-        break; // Stop checking after first failure
+        break;
       }
+
+      // 💡 THROTTLE: Wait 1.2 seconds before firing the next test case
+      await delay(1200);
     }
 
     await Submission.create({
@@ -186,7 +180,6 @@ const runtestcases = asyncHandler(async (req, res) => {
         )
       );
   } catch (error) {
-    console.error(" SUBMISSION_CONTROLLER_ERROR:", error.message);
     return res
       .status(500)
       .json(new ApiResponse(500, null, "Failed to process test cases"));
