@@ -23,7 +23,16 @@ const executeCodeWithRetry = async (language, code, input, retries = 3) => {
       const response = await axios.post(
         `${process.env.JUDGE0_URL}/execute`,
         { language, code, input },
-        { timeout: 60000 } // Keep at 60s for cloud cold starts
+        {
+          timeout: 60000, // Keep at 60s for cloud cold starts
+          // 🚀 THE MAGIC FIX: Ye headers Cloudflare ko bewakoof banayenge ki hum asli PC hain
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
       );
       return response; // Success! Return immediately.
     } catch (error) {
