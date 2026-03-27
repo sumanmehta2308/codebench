@@ -4,18 +4,27 @@ const Problem = require("../models/problem.model");
 const Submission = require("../models/submission.model");
 const { ApiResponse } = require("../utils/ApiResponse");
 const axios = require("axios");
+const http = require("http");
+const https = require("https");
 
-// Cleans input
+// 🔥 KEEP-ALIVE FIX (IMPORTANT)
+const httpAgent = new http.Agent({ keepAlive: true });
+const httpsAgent = new https.Agent({ keepAlive: true });
+
+require("http").globalAgent.maxSockets = 50;
+require("https").globalAgent.maxSockets = 50;
+
+// Clean input
 const cleanInput = (str) => {
   if (!str) return "";
   const numbers = str.match(/-?\d+/g);
   return numbers ? numbers.join(" ") : "";
 };
 
-// Delay helper
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// Delay
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
-// ✅ FIXED: stronger retry + better backoff
+// ✅ FINAL RETRY FUNCTION
 const executeCodeWithRetry = async (language, code, input, retries = 5) => {
   for (let i = 0; i < retries; i++) {
     try {
@@ -24,8 +33,10 @@ const executeCodeWithRetry = async (language, code, input, retries = 5) => {
         { language, code, input },
         {
           timeout: 60000,
+          httpAgent,
+          httpsAgent,
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "User-Agent": "Mozilla/5.0",
             Accept: "application/json",
             "Content-Type": "application/json",
           },
@@ -34,8 +45,8 @@ const executeCodeWithRetry = async (language, code, input, retries = 5) => {
       return response;
     } catch (error) {
       if (error.response && error.response.status === 429 && i < retries - 1) {
-        console.warn(`[429] Retrying in ${3 * (i + 1)} seconds...`);
-        await delay(3000 * (i + 1)); // ✅ FIXED
+        console.warn(`[429] Retry ${i + 1}... waiting...`);
+        await delay(4000); // 🔥 stable retry delay
         continue;
       }
       throw error;
@@ -46,6 +57,7 @@ const executeCodeWithRetry = async (language, code, input, retries = 5) => {
 // 1. RUN CODE
 const runCode = asyncHandler(async (req, res) => {
   const { language, code, input } = req.body;
+
   try {
     const sanitizedInput = cleanInput(input);
 
@@ -70,12 +82,6 @@ const run_example_cases = asyncHandler(async (req, res) => {
   try {
     validateCode(language, code);
 
-    if (!example_cases || example_cases.length === 0) {
-      return res
-        .status(400)
-        .json(new ApiResponse(400, null, "No example cases provided"));
-    }
-
     const res_output = [];
 
     for (const testCase of example_cases) {
@@ -84,15 +90,8 @@ const run_example_cases = asyncHandler(async (req, res) => {
 
         const resp = await executeCodeWithRetry(language, code, sanitizedInput);
 
-        const actualOutput = (resp.data.output || "")
-          .toString()
-          .replace(/\r/g, "")
-          .trim();
-
-        const expectedOutput = (testCase.output || "")
-          .toString()
-          .replace(/\r/g, "")
-          .trim();
+        const actualOutput = (resp.data.output || "").toString().trim();
+        const expectedOutput = (testCase.output || "").toString().trim();
 
         res_output.push({
           input: testCase.input,
@@ -110,8 +109,8 @@ const run_example_cases = asyncHandler(async (req, res) => {
         });
       }
 
-      // ✅ FIXED: increased delay to avoid 429
-      await delay(4000);
+      // 🔥 SAFE DELAY
+      await delay(3500);
     }
 
     return res
@@ -134,11 +133,6 @@ const runtestcases = asyncHandler(async (req, res) => {
     validateCode(language, code);
 
     const problem = await Problem.findById(problem_id).select("test_cases");
-    if (!problem) {
-      return res
-        .status(404)
-        .json(new ApiResponse(404, null, "Problem not found"));
-    }
 
     let failedTestCase = null;
     let isSuccess = true;
@@ -149,15 +143,8 @@ const runtestcases = asyncHandler(async (req, res) => {
 
         const resp = await executeCodeWithRetry(language, code, sanitizedInput);
 
-        const actualOutput = (resp.data.output || "")
-          .toString()
-          .replace(/\r/g, "")
-          .trim();
-
-        const expectedOutput = testCase.output
-          .toString()
-          .replace(/\r/g, "")
-          .trim();
+        const actualOutput = (resp.data.output || "").toString().trim();
+        const expectedOutput = testCase.output.toString().trim();
 
         if (actualOutput !== expectedOutput) {
           isSuccess = false;
@@ -179,8 +166,8 @@ const runtestcases = asyncHandler(async (req, res) => {
         break;
       }
 
-      // ✅ FIXED: increased delay
-      await delay(4000);
+      // 🔥 SAFE DELAY
+      await delay(3500);
     }
 
     await Submission.create({
