@@ -1,6 +1,6 @@
 const { ApiError } = require("../utils/ApiError.js");
 
-const forbiddenWords = {
+const languageSpecificForbiddenWords = {
   c: [
     "system",
     "exec",
@@ -46,14 +46,18 @@ const forbiddenWords = {
   ],
 };
 
+// Generic list applied to ALL languages
+const genericForbiddenWords = ["system", "fork", "exec", "spawn", "kill"];
+
 const validateCode = (language, code) => {
   if (!code || code.trim() === "") {
     throw new ApiError(400, "Code is required");
   }
-  const forbiddenWords = ["system", "fork", "exec", "spawn", "kill"];
+
   const cleanCode = code.replace(/\/\/.*|\/\*[\s\S]*?\*\//g, "");
 
-  for (const word of forbiddenWords) {
+  // 1. Check generic forbidden words first
+  for (const word of genericForbiddenWords) {
     if (cleanCode.includes(word)) {
       throw new ApiError(
         400,
@@ -61,9 +65,23 @@ const validateCode = (language, code) => {
       );
     }
   }
+
+  // 2. Check language-specific forbidden words
+  const specificWords = languageSpecificForbiddenWords[language.toLowerCase()];
+  if (specificWords) {
+    for (const word of specificWords) {
+      if (cleanCode.includes(word)) {
+        throw new ApiError(
+          400,
+          `${language.toUpperCase()} code contains forbidden word: ${word}`
+        );
+      }
+    }
+  }
 };
+
 const validateInput = (language, userInput) => {
-  const wordsToCheck = forbiddenWords[language];
+  const wordsToCheck = languageSpecificForbiddenWords[language.toLowerCase()];
   if (!wordsToCheck) {
     throw new ApiError(400, "Unsupported Language");
   }

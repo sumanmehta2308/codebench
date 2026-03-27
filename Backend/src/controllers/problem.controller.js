@@ -1,5 +1,7 @@
 const Problem = require("../models/problem.model");
+const Submission = require("../models/submission.model"); // ✅ ADDED: Required for the solved filter
 const { ApiResponse } = require("../utils/ApiResponse");
+const { ApiError } = require("../utils/ApiError"); // ✅ ADDED: Required for error throwing
 const asyncHandler = require("../utils/asyncHandler");
 
 const createproblem = asyncHandler(async (req, res) => {
@@ -38,7 +40,7 @@ const getAllproblems = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 5;
   const skip = (page - 1) * limit;
-  const difficultyFilter = req.query.difficulty; // This will be "easy", "medium", "hard", or "solved"
+  const difficultyFilter = req.query.difficulty;
 
   // 2. Build the Match Object for filtering
   let matchQuery = {};
@@ -46,14 +48,14 @@ const getAllproblems = asyncHandler(async (req, res) => {
   if (difficultyFilter === "solved") {
     // Check if user is logged in
     if (!req.user) {
-      throw new ApiError(401, "Please login to see solved problems");
+      throw new ApiError(401, "Please login to see solved problems"); // Now ApiError works
     }
 
     // 💡 Find IDs of problems the user has successfully submitted
     const solvedProblemIds = await Submission.find({
-      userId: req.user._id,
-      status: "Accepted", // Make sure this matches your Submission status (e.g., 'Pass' or 'Accepted')
-    }).distinct("problemId");
+      madeBy: req.user._id, // FIXED: Changed userId to madeBy to match your submission model schema!
+      status: true, // FIXED: Changed "Accepted" to boolean true based on your runcode controller!
+    }).distinct("problem"); // FIXED: Changed "problemId" to "problem" based on your submission model!
 
     // Filter problems to only show those specific IDs
     matchQuery._id = { $in: solvedProblemIds };
@@ -64,7 +66,7 @@ const getAllproblems = asyncHandler(async (req, res) => {
     };
   }
 
-  // 3. Aggregate Data (Same as before, now using our new matchQuery)
+  // 3. Aggregate Data
   const problems = await Problem.aggregate([
     {
       $match: matchQuery,
@@ -94,7 +96,7 @@ const getAllproblems = asyncHandler(async (req, res) => {
     { $limit: limit },
   ]);
 
-  // 4. Get total count for pagination (important for the UI to know total pages)
+  // 4. Get total count for pagination
   const totalCount = await Problem.countDocuments(matchQuery);
   const totalPages = Math.ceil(totalCount / limit);
 
@@ -112,11 +114,10 @@ const getAllproblems = asyncHandler(async (req, res) => {
     )
   );
 });
+
 const getproblemById = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  // NOTE: If you use .select("-test_cases"), the admin Edit Problem form won't receive the hidden test cases to populate the form.
-  // For a full production app, you might want a separate admin-only GET route.
   const problem = await Problem.findById(id);
 
   if (!problem)
@@ -128,12 +129,10 @@ const getproblemById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, problem, "Problem retrieved successfully"));
 });
 
-// 💡 NEW: Update Problem Controller
 const updateproblemById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const updateData = req.body;
 
-  // findByIdAndUpdate with { new: true } returns the updated document instead of the old one
   const updatedProblem = await Problem.findByIdAndUpdate(id, updateData, {
     new: true,
     runValidators: true,
@@ -166,6 +165,6 @@ module.exports = {
   createproblem,
   getproblemById,
   getAllproblems,
-  updateproblemById, // Exported the new function
+  updateproblemById,
   deleteproblemById,
 };
