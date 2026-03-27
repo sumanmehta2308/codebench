@@ -1,7 +1,6 @@
 version: "3.9"
 
 services:
-  # 1. Judge Service (Native Code Execution)
   judge0:
     build: ./Judge
     container_name: code-judge
@@ -10,14 +9,14 @@ services:
     volumes:
       - ./Judge:/app
       - /app/node_modules
+    # 💡 It's better to give Judge its own .env to avoid confusion
     env_file:
-      - ./Backend/.env
+      - ./Judge/.env 
     networks:
       codebench-network:
         aliases:
-          - code-judge # Now 'code-judge' works as a URL
+          - code-judge
 
-  # 2. Backend Service (Main API & Socket Server)
   backend:
     build: ./Backend
     container_name: codebench-backend
@@ -33,7 +32,6 @@ services:
     networks:
       - codebench-network
 
-# 🔹 Networks (Volumes removed since Judge uses its own /temp folder now)
 networks:
   codebench-network:
     driver: bridge

@@ -1,7 +1,6 @@
 const rateLimit = require("express-rate-limit");
 const RedisStore = require("rate-limit-redis").default;
 const redisClient = require("../db/redis");
-const { ApiResponse } = require("../utils/ApiResponse");
 
 const codeExecutionLimiter = rateLimit({
   store: new RedisStore({
@@ -13,24 +12,24 @@ const codeExecutionLimiter = rateLimit({
       }
       return redisClient.sendCommand(args);
     },
-    prefix: "cb_rate:",
-    handleError: (err) => console.error("Redis RateLimit Conn Error:", err),
+    prefix: "judge_rate:", // Unique prefix for judge
   }),
 
-  windowMs: 1 * 60 * 1000, //  Reduced to 1 minute
-  max:30, //  Increased to 50 (Allows batch test cases to fly)
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 50, // Higher limit for batch test cases
   standardHeaders: true,
   legacyHeaders: false,
 
   handler: (req, res) => {
-    res
-      .status(429)
-      .json(new ApiResponse(429, null, "Too many requests. Please wait."));
+    res.status(429).json({
+      status: "fail",
+      message: "Too many execution requests. Please wait a minute.",
+    });
   },
 
   keyGenerator: (req, res) => {
-    if (req.user) return req.user._id.toString();
-    return rateLimit.ipKeyGenerator(req, res);
+    // Falls back to IP. app.set("trust proxy", 1) in index.js makes this work on Render.
+    return req.ip;
   },
 });
 

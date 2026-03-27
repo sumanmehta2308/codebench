@@ -7,32 +7,28 @@ const axios = require("axios");
 const http = require("http");
 const https = require("https");
 
-// 🔥 KEEP-ALIVE FIX (IMPORTANT)
 const httpAgent = new http.Agent({ keepAlive: true });
 const httpsAgent = new https.Agent({ keepAlive: true });
 
 require("http").globalAgent.maxSockets = 50;
 require("https").globalAgent.maxSockets = 50;
 
-// Clean input
 const cleanInput = (str) => {
   if (!str) return "";
   const numbers = str.match(/-?\d+/g);
   return numbers ? numbers.join(" ") : "";
 };
 
-// Delay
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
-// ✅ FINAL RETRY FUNCTION
-const executeCodeWithRetry = async (language, code, input, retries = 5) => {
+const executeCodeWithRetry = async (language, code, input, retries = 3) => {
   for (let i = 0; i < retries; i++) {
     try {
       const response = await axios.post(
         `${process.env.JUDGE0_URL}/execute`,
         { language, code, input },
         {
-          timeout: 60000,
+          timeout: 30000, // 🚀 Reduced timeout for faster failure
           httpAgent,
           httpsAgent,
           headers: {
@@ -44,9 +40,10 @@ const executeCodeWithRetry = async (language, code, input, retries = 5) => {
       );
       return response;
     } catch (error) {
-      if (error.response && error.response.status === 429 && i < retries - 1) {
-        console.warn(`[429] Retry ${i + 1}... waiting...`);
-        await delay(4000); // 🔥 stable retry delay
+      // Only delay if we hit a 429
+      if (error.response?.status === 429 && i < retries - 1) {
+        console.warn(`[429] Retry ${i + 1}... waiting 2s`);
+        await delay(2000);
         continue;
       }
       throw error;
@@ -54,15 +51,15 @@ const executeCodeWithRetry = async (language, code, input, retries = 5) => {
   }
 };
 
-// 1. RUN CODE
+// 1. RUN CODE (Instant)
 const runCode = asyncHandler(async (req, res) => {
   const { language, code, input } = req.body;
-
   try {
-    const sanitizedInput = cleanInput(input);
-
-    const response = await executeCodeWithRetry(language, code, sanitizedInput);
-
+    const response = await executeCodeWithRetry(
+      language,
+      code,
+      cleanInput(input)
+    );
     return res
       .status(200)
       .json(
@@ -75,29 +72,28 @@ const runCode = asyncHandler(async (req, res) => {
   }
 });
 
-// 2. RUN EXAMPLE CASES
+// 2. RUN EXAMPLE CASES (Fast Loop)
 const run_example_cases = asyncHandler(async (req, res) => {
   const { language, code, example_cases } = req.body;
-
   try {
     validateCode(language, code);
-
     const res_output = [];
 
     for (const testCase of example_cases) {
       try {
-        const sanitizedInput = cleanInput(testCase.input);
-
-        const resp = await executeCodeWithRetry(language, code, sanitizedInput);
-
-        const actualOutput = (resp.data.output || "").toString().trim();
-        const expectedOutput = (testCase.output || "").toString().trim();
+        const resp = await executeCodeWithRetry(
+          language,
+          code,
+          cleanInput(testCase.input)
+        );
+        const actual = (resp.data.output || "").toString().trim();
+        const expected = (testCase.output || "").toString().trim();
 
         res_output.push({
           input: testCase.input,
-          expectedOutput,
-          actualOutput,
-          isMatch: actualOutput === expectedOutput,
+          expectedOutput: expected,
+          actualOutput: actual,
+          isMatch: actual === expected,
         });
       } catch (err) {
         res_output.push({
@@ -108,9 +104,7 @@ const run_example_cases = asyncHandler(async (req, res) => {
           isMatch: false,
         });
       }
-
-      // 🔥 SAFE DELAY
-      await delay(3500);
+      await delay(100); // ⚡ Fast 100ms breath
     }
 
     return res
@@ -125,33 +119,31 @@ const run_example_cases = asyncHandler(async (req, res) => {
   }
 });
 
-// 3. RUN TEST CASES
+// 3. RUN TEST CASES (Fast Loop)
 const runtestcases = asyncHandler(async (req, res) => {
   const { language, problem_id, code } = req.body;
-
   try {
     validateCode(language, code);
-
     const problem = await Problem.findById(problem_id).select("test_cases");
-
     let failedTestCase = null;
     let isSuccess = true;
 
     for (const testCase of problem.test_cases) {
       try {
-        const sanitizedInput = cleanInput(testCase.input);
+        const resp = await executeCodeWithRetry(
+          language,
+          code,
+          cleanInput(testCase.input)
+        );
+        const actual = (resp.data.output || "").toString().trim();
+        const expected = testCase.output.toString().trim();
 
-        const resp = await executeCodeWithRetry(language, code, sanitizedInput);
-
-        const actualOutput = (resp.data.output || "").toString().trim();
-        const expectedOutput = testCase.output.toString().trim();
-
-        if (actualOutput !== expectedOutput) {
+        if (actual !== expected) {
           isSuccess = false;
           failedTestCase = {
             input: testCase.input,
-            actualOutput,
-            expectedOutput,
+            actualOutput: actual,
+            expectedOutput: expected,
             status: "Wrong Answer",
           };
           break;
@@ -159,15 +151,13 @@ const runtestcases = asyncHandler(async (req, res) => {
       } catch (err) {
         isSuccess = false;
         failedTestCase = {
-          input: "Hidden Test Case",
+          input: "Hidden Case",
           status: "Runtime Error",
-          error: err.response?.data?.error || err.message,
+          error: err.message,
         };
         break;
       }
-
-      // 🔥 SAFE DELAY
-      await delay(3500);
+      await delay(100); // ⚡ Fast 100ms breath
     }
 
     await Submission.create({
