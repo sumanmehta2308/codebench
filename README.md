@@ -15,24 +15,23 @@
 **CodeBench** is a high-performance, full-stack platform designed for **remote technical interviews** and **collaborative coding**. It features a secure, containerized execution engine and real-time synchronization, allowing users to solve complex algorithmic problems in a shared virtual room.
 
 ### Key Features
-- **Isolated Code Execution:** Every submission runs in a fresh **Docker container**, ensuring the host system is protected from malicious code.
-- **Real-Time Collaboration:** Powered by **Socket.io** for instant code syncing, cursor tracking, and room-based interviewing.
 - **Problem Archive:** A structured database of coding challenges with descriptions, constraints, and hidden test cases.
 - **Secure Authentication:** Robust user management using **JWT (JSON Web Tokens)** and HTTP-only cookies.
 - **Dashboard & Analytics:** Track solved problems and user performance via a personalized profile.
-
+Real-Time Code Syncing: Multiple users can write and edit code simultaneously in a shared Monaco Editor.
+Integrated Video & Audio: WebRTC-powered high-quality video calls for seamless communication during technical assessments.
+Admin Control: Hosts can manage interview questions, set countdown timers, and control join requests
 ---
 
 ## 🛠️ Tech Stack
 
-| Layer | Technologies |
-| :--- | :--- |
-| **Frontend** | React.js, Redux Toolkit, Tailwind CSS, Vite |
-| **Backend** | Node.js, Express.js |
-| **Database** | MongoDB (Mongoose) |
-| **Real-time** | Socket.io |
-| **DevOps** | Docker (Containerization Engine) |
-| **Cloud** | Cloudinary (Image Storage) |
+Layer         Technologies
+Frontend      React.js, Redux Toolkit, Tailwind CSS v4, Monaco Editor, Vite
+Backend       Node.js, Express.js, Socket.io (WebSockets)
+Database      MongoDB (Mongoose), Redis (Rate Limiting)
+Real-time     WebRTC (Peer-to-Peer Video/Audio)
+DevOps        Docker (Isolated Execution), Judge0
+Cloud         Cloudinary (User Avatars), Vercel, Render
 
 ---
 
@@ -52,15 +51,9 @@ CLOUDINARY_API_SECRET=your_secret
 VITE_BACKEND_URL=http://localhost:8000
 VITE_BACKEND_URL_FOR_SOCKET=http://localhost:8000
 npm install && npm run dev
-
-4. Docker Setup
-Install Docker Desktop on Windows.
-
-Ensure Docker is running before clicking "Run Code" in the application.
-
-CodeBench will automatically pull the necessary execution images.
 Author
    Suman Mehta 
-MCA Student @ National Institute of Technology (NIT), Raipur - Email: sumanmehta8298@gmail.com
+MCA Student @ National Institute of Technology (NIT), Raipur
+ Email: sumanmehta8298@gmail.com
 LeetCode: 650+ Problems Solved
 GeeksforGeeks: 250+ Problems Solved
