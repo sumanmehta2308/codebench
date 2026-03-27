@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux"; // 💡 Using Redux instead of useSocket!
+import { useSelector } from "react-redux"; // 庁 Using Redux instead of useSocket!
 import Editor from "@monaco-editor/react";
 import Timer from "./Timer.jsx";
 import { runExampleCasesService } from "../../Services/CodeRun.service.js";
@@ -18,7 +18,7 @@ function Room() {
   const location = useLocation();
   const extraInfo = location.state;
 
-  // 💡 Grab socket and user cleanly from the Redux backpack
+  // 庁 Grab socket and user cleanly from the Redux backpack
   const { socket, user } = useSelector((state) => state.auth);
 
   const [question, setquestion] = useState("");
@@ -46,7 +46,7 @@ function Room() {
   const [showQuestion, setShowQuestion] = useState(false);
 
   useEffect(() => {
-    // 💡 No more localStorage! Just using 'user' directly from Redux
+    // 庁 No more localStorage! Just using 'user' directly from Redux
     if (extraInfo && user && extraInfo._id === user._id) {
       setprevilige(true);
     } else if (extraInfo) {
@@ -150,7 +150,7 @@ function Room() {
   };
 
   useEffect(() => {
-    if (!socket) return; // 💡 Added safety check
+    if (!socket) return; // 庁 Added safety check
 
     socket.on("user:requested_to_join", handleJoinRequest);
     socket.on("host:hasleft", help1);
@@ -290,15 +290,20 @@ function Room() {
   if (!mystream) return <Loading />;
 
   return (
-    <div className="h-screen p-6 bg-gray-800 flex text-white justify-evenly">
-      <div className="bg-gray-900 p-6 rounded-lg w-1/4 flex flex-col">
-        <div className="flex flex-col space-y-6">
-          <div className="flex items-center justify-evenly space-x-4">
+    <div className="min-h-screen lg:h-screen p-4 md:p-6 bg-gray-800 flex flex-col lg:flex-row text-white justify-between lg:justify-evenly gap-4 lg:gap-0 overflow-y-auto lg:overflow-hidden">
+      {/* Left Column: Tools & Test Cases */}
+      <div className="bg-gray-900 p-4 md:p-6 rounded-lg w-full lg:w-1/4 flex flex-col order-2 lg:order-1 overflow-y-auto">
+        <div className="flex flex-col space-y-4 md:space-y-6">
+          <div className="flex items-center justify-evenly space-x-2 md:space-x-4">
             <button
               className="bg-red-600 p-2 rounded-lg hover:bg-red-700 transition"
               onClick={exitroom}
             >
-              <img className="h-6 w-6" src="/endcall.png" alt="end call" />
+              <img
+                className="h-5 w-5 md:h-6 md:w-6"
+                src="/endcall.png"
+                alt="end call"
+              />
             </button>
             <button
               className={`p-2 rounded-lg transition ${
@@ -307,7 +312,7 @@ function Room() {
               onClick={toggleAudio}
             >
               <img
-                className="h-6 w-6"
+                className="h-5 w-5 md:h-6 md:w-6"
                 src={isAudioOn ? "/micon.png" : "/micoff.png"}
                 alt="Mic"
               />
@@ -319,7 +324,7 @@ function Room() {
               onClick={toggleVideo}
             >
               <img
-                className="h-6 w-6"
+                className="h-5 w-5 md:h-6 md:w-6"
                 src={isVideoOn ? "/camera-on.png" : "/camera-off.png"}
                 alt="Cam"
               />
@@ -327,18 +332,18 @@ function Room() {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-2xl font-extrabold text-gray-300 text-center">
+            <h3 className="text-xl md:text-2xl font-extrabold text-gray-300 text-center">
               Test Cases
             </h3>
             {executing ? (
               <Executing text={"Executing"} />
             ) : exampleCasesExecution ? (
-              <div className="bg-gray-700 rounded-lg p-2">
+              <div className="bg-gray-700 rounded-lg p-2 overflow-x-auto">
                 <ExampleCasesOutput
                   exampleCasesExecution={exampleCasesExecution}
                 />
                 <button
-                  className="mt-2 px-2 py-1 rounded-lg bg-blue-600"
+                  className="mt-2 px-3 py-1.5 rounded-lg bg-blue-600 w-full sm:w-auto"
                   onClick={() => setExampleCasesExecution(null)}
                 >
                   Reset
@@ -357,7 +362,7 @@ function Room() {
                     onChange={(e) =>
                       handleInputChange(index, "input", e.target.value)
                     }
-                    className="w-full p-1 rounded-md bg-gray-800 text-sm border border-gray-600"
+                    className="w-full p-1.5 rounded-md bg-gray-800 text-sm border border-gray-600"
                   />
                   <input
                     type="text"
@@ -366,7 +371,7 @@ function Room() {
                     onChange={(e) =>
                       handleInputChange(index, "output", e.target.value)
                     }
-                    className="w-full p-1 rounded-md bg-gray-800 text-sm border border-gray-600"
+                    className="w-full p-1.5 rounded-md bg-gray-800 text-sm border border-gray-600"
                   />
                 </div>
               ))
@@ -378,18 +383,19 @@ function Room() {
         </div>
       </div>
 
-      <div className="px-6 bg-gray-900 mx-4 rounded-lg p-8 w-1/2">
-        <div className="flex justify-between items-center border-b-2 border-gray-700 pb-4">
+      {/* Middle Column: Editor */}
+      <div className="px-4 md:px-6 bg-gray-900 mx-0 lg:mx-4 rounded-lg p-4 md:p-8 w-full lg:w-1/2 order-1 lg:order-2 flex flex-col h-[60vh] lg:h-full">
+        <div className="flex justify-between items-center border-b-2 border-gray-700 pb-4 mb-4">
           <div className="flex space-x-2">
             <button
               onClick={clickRun}
-              className="px-3 py-2 bg-green-600 rounded-lg text-sm font-bold"
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-green-600 rounded-lg text-xs md:text-sm font-bold"
             >
               Run
             </button>
             <button
               onClick={() => setShowQuestion(!showQuestion)}
-              className="px-3 py-2 bg-blue-600 rounded-lg text-sm font-bold"
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-blue-600 rounded-lg text-xs md:text-sm font-bold"
             >
               Question
             </button>
@@ -398,7 +404,7 @@ function Room() {
             <select
               onChange={(e) => handleLanguageChange(e.target.value)}
               value={language}
-              className="p-1 bg-gray-800 border border-gray-600 rounded text-sm"
+              className="p-1 md:p-1.5 bg-gray-800 border border-gray-600 rounded text-xs md:text-sm"
             >
               <option value="cpp">C++</option>
               <option value="c">C</option>
@@ -409,7 +415,7 @@ function Room() {
         </div>
 
         {showQuestion && (
-          <div className="absolute z-50 mt-4 w-1/2 max-h-[500px] overflow-y-auto bg-white text-black rounded-lg p-6 shadow-2xl">
+          <div className="absolute z-50 mt-4 w-[90%] lg:w-1/2 max-h-[500px] overflow-y-auto bg-white text-black rounded-lg p-4 md:p-6 shadow-2xl">
             {previlige ? (
               <textarea
                 value={question}
@@ -420,17 +426,19 @@ function Room() {
                     question: e.target.value,
                   });
                 }}
-                className="w-full h-80 p-2 border border-gray-300 rounded"
+                className="w-full h-64 md:h-80 p-2 border border-gray-300 rounded text-sm md:text-base"
               />
             ) : (
-              <p className="whitespace-pre-wrap">{question}</p>
+              <p className="whitespace-pre-wrap text-sm md:text-base">
+                {question}
+              </p>
             )}
           </div>
         )}
 
-        <div className="mt-4">
+        <div className="flex-1 min-h-[300px] lg:min-h-0">
           <Editor
-            height="65vh"
+            height="100%"
             language={language}
             value={code}
             theme={theme}
@@ -447,14 +455,15 @@ function Room() {
         </div>
       </div>
 
-      <div className="w-1/4 bg-gray-900 p-4 rounded-lg">
+      {/* Right Column: Videos & Connection Status */}
+      <div className="w-full lg:w-1/4 bg-gray-900 p-4 rounded-lg order-3 flex flex-col overflow-y-auto">
         {connectionReady ? (
           <div className="flex flex-col space-y-4">
             <div className="bg-gray-800 p-3 rounded-lg">
-              <p className="text-center text-sm mb-2">
+              <p className="text-center text-xs md:text-sm mb-2">
                 {remoteUser ? remoteUser.fullname : "Interviewer"}
               </p>
-              <div className="h-40 bg-black rounded-lg flex items-center justify-center overflow-hidden">
+              <div className="h-40 md:h-48 bg-black rounded-lg flex items-center justify-center overflow-hidden">
                 {remoteStream ? (
                   <video
                     ref={(v) => {
@@ -470,8 +479,8 @@ function Room() {
               </div>
             </div>
             <div className="bg-gray-800 p-3 rounded-lg">
-              <p className="text-center text-sm mb-2">You</p>
-              <div className="h-40 bg-black rounded-lg flex items-center justify-center overflow-hidden">
+              <p className="text-center text-xs md:text-sm mb-2">You</p>
+              <div className="h-40 md:h-48 bg-black rounded-lg flex items-center justify-center overflow-hidden">
                 {isVideoOn ? (
                   <ReactPlayer
                     playing={isVideoOn}
@@ -488,7 +497,7 @@ function Room() {
             {show_share_streams === 1 && (
               <button
                 onClick={sendstreams}
-                className="w-full py-2 bg-blue-600 rounded-lg text-sm"
+                className="w-full py-2 bg-blue-600 rounded-lg text-sm font-semibold"
               >
                 Share Stream
               </button>
@@ -496,29 +505,36 @@ function Room() {
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-green-600 p-3 rounded-lg flex justify-between items-center">
-              <p className="font-bold">Room: {roomId}</p>
+            <div className="bg-green-600 p-3 rounded-lg flex justify-between items-center break-all">
+              <p className="font-bold text-sm md:text-base mr-2">
+                Room: {roomId}
+              </p>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(roomId);
                   toast.success("Copied!");
                 }}
-                className="p-1 bg-white rounded"
+                className="p-1.5 md:p-2 bg-white rounded shrink-0"
               >
-                <img className="w-4" src="/copy.png" />
+                <img className="w-4 md:w-5" src="/copy.png" alt="copy" />
               </button>
             </div>
             <div className="bg-gray-800 p-4 rounded-lg">
               <p className="text-sm font-bold mb-3">Join Requests</p>
+              {requsername.length === 0 && (
+                <p className="text-xs text-gray-400">No requests yet.</p>
+              )}
               {requsername.map((x, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between bg-gray-700 p-2 rounded mb-2"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-gray-700 p-3 rounded mb-2 gap-2 sm:gap-0"
                 >
-                  <p className="text-xs">{x.user.fullname}</p>
+                  <p className="text-xs md:text-sm font-semibold">
+                    {x.user.fullname}
+                  </p>
                   <button
                     onClick={() => acceptrequest(i)}
-                    className="px-2 py-1 bg-green-600 rounded text-xs"
+                    className="w-full sm:w-auto px-3 py-1.5 bg-green-600 rounded text-xs md:text-sm font-bold"
                   >
                     Accept
                   </button>

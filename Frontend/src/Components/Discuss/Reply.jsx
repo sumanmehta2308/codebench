@@ -40,18 +40,18 @@ function Reply({ replyOf = "", onReplySuccess }) {
           placeholder="Write your content..."
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-3 rounded-lg bg-gray-600 text-white border border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
         />
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <input
           type="file"
-          className="text-white bg-gray-700 py-2 px-4 rounded-lg cursor-pointer focus:outline-none"
+          className="text-white bg-gray-700 py-2 px-4 rounded-lg cursor-pointer focus:outline-none w-full sm:w-auto"
           onChange={(e) => setFile(e.target.files[0])}
         />
         <button
           onClick={handleTweetCreate}
-          className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition duration-200"
+          className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition duration-200 w-full sm:w-auto"
         >
           {replyOf === "" ? <>Create Tweet</> : <>Send</>}
         </button>

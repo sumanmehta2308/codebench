@@ -20,7 +20,7 @@ const CreateProblem = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // 💡 MAGIC FLAG: Automatically determines if we are editing or creating based on the URL
+  // 庁 MAGIC FLAG: Automatically determines if we are editing or creating based on the URL
   const isEditMode = Boolean(id);
 
   const {
@@ -103,7 +103,7 @@ const CreateProblem = () => {
     };
 
     try {
-      // 💡 DECISION LOGIC: Call Update or Call Create based on mode
+      // 庁 DECISION LOGIC: Call Update or Call Create based on mode
       if (isEditMode) {
         const success = await updateProblemService(id, cleanedData);
         if (success) {
@@ -130,14 +130,15 @@ const CreateProblem = () => {
   const labelClass =
     "label-text font-bold text-slate-400 mb-2 block uppercase tracking-wider text-xs";
   const sectionClass =
-    "bg-slate-800/40 p-8 rounded-3xl border border-slate-700 shadow-xl backdrop-blur-sm mb-8";
+    "bg-slate-800/40 p-5 md:p-8 rounded-3xl border border-slate-700 shadow-xl backdrop-blur-sm mb-8";
 
   return (
-    <div className="min-h-screen bg-slate-950 py-12 px-4 sm:px-10 text-slate-200">
+    <div className="min-h-screen bg-slate-950 py-8 md:py-12 px-4 sm:px-10 text-slate-200">
       <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
+        {/* Header - Made Responsive */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 md:mb-10 gap-4">
           <div>
-            <h1 className="text-4xl font-black text-white tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
               {isEditMode ? "Modify" : "Create"}{" "}
               <span className={isEditMode ? "text-info" : "text-blue-500"}>
                 Challenge
@@ -151,7 +152,7 @@ const CreateProblem = () => {
           </div>
           <button
             onClick={() => navigate("/admin")}
-            className="btn btn-ghost text-slate-400 normal-case"
+            className="btn btn-ghost text-slate-400 normal-case w-full md:w-auto"
           >
             Cancel
           </button>
@@ -163,7 +164,7 @@ const CreateProblem = () => {
             <h2 className="text-xl font-bold text-blue-400 mb-6 flex items-center gap-2">
               <CheckCircleIcon className="w-6 h-6" /> Basic Information
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
               <div className="md:col-span-2">
                 <label className={labelClass}>Problem Title</label>
                 <input
@@ -178,9 +179,9 @@ const CreateProblem = () => {
                   {...register("difficulty")}
                   className="select select-bordered w-full bg-slate-900/50 border-slate-700 text-slate-200 h-12"
                 >
-                  <option value="easy">🟢 Easy</option>
-                  <option value="medium">🟡 Medium</option>
-                  <option value="hard">🔴 Hard</option>
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
                 </select>
               </div>
             </div>
@@ -195,7 +196,7 @@ const CreateProblem = () => {
           </div>
 
           {/* SECTION 2: I/O & CONSTRAINTS */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 mb-8">
             <div className={sectionClass + " mb-0"}>
               <h2 className="text-xl font-bold text-emerald-400 mb-6 flex items-center gap-2">
                 <ListBulletIcon className="w-6 h-6" /> I/O Format
@@ -258,7 +259,7 @@ const CreateProblem = () => {
             {exFields.map((field, index) => (
               <div
                 key={field.id}
-                className="bg-slate-900/40 p-6 rounded-2xl border border-slate-700 relative mb-4"
+                className="bg-slate-900/40 p-4 sm:p-6 rounded-2xl border border-slate-700 relative mb-4"
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
@@ -286,7 +287,7 @@ const CreateProblem = () => {
                 <button
                   type="button"
                   onClick={() => removeEx(index)}
-                  className="absolute top-4 right-4 text-rose-500"
+                  className="absolute top-2 right-2 sm:top-4 sm:right-4 text-rose-500 bg-slate-900 p-1 rounded-full"
                 >
                   <TrashIcon className="w-5 h-5" />
                 </button>
@@ -297,7 +298,7 @@ const CreateProblem = () => {
               onClick={() =>
                 appendEx({ input: "", output: "", explanation: "" })
               }
-              className="btn btn-outline btn-sm btn-warning"
+              className="btn btn-outline btn-sm w-full sm:w-auto btn-warning"
             >
               Add Example
             </button>
@@ -311,7 +312,7 @@ const CreateProblem = () => {
             {testFields.map((field, index) => (
               <div
                 key={field.id}
-                className="bg-slate-900/40 p-6 rounded-2xl border border-rose-900/30 relative mb-4"
+                className="bg-slate-900/40 p-4 sm:p-6 rounded-2xl border border-rose-900/30 relative mb-4"
               >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -334,7 +335,7 @@ const CreateProblem = () => {
                 <button
                   type="button"
                   onClick={() => removeTest(index)}
-                  className="absolute top-4 right-4 text-rose-500"
+                  className="absolute top-2 right-2 sm:top-4 sm:right-4 text-rose-500 bg-slate-900 p-1 rounded-full"
                 >
                   <TrashIcon className="w-5 h-5" />
                 </button>
@@ -343,7 +344,7 @@ const CreateProblem = () => {
             <button
               type="button"
               onClick={() => appendTest({ input: "", output: "" })}
-              className="btn btn-outline btn-sm btn-error"
+              className="btn btn-outline w-full sm:w-auto btn-sm btn-error"
             >
               Add Hidden Case
             </button>
@@ -386,5 +387,4 @@ const CreateProblem = () => {
     </div>
   );
 };
-
 export default CreateProblem;

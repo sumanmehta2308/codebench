@@ -47,19 +47,19 @@ const ContestRoom = () => {
     );
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-8">
+    <div className="min-h-screen bg-slate-900 text-white p-4 sm:p-8">
       <div className="max-w-6xl mx-auto">
-        {/* Room Header */}
-        <div className="flex justify-between items-center mb-10 bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-lg">
-          <div>
-            <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+        {/* Room Header - Made Responsive */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-10 bg-slate-800 p-5 sm:p-6 rounded-xl border border-slate-700 shadow-lg gap-4">
+          <div className="w-full text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
               {contest.title}
             </h1>
-            <p className="text-sm text-slate-400 mt-2">
+            <p className="text-xs sm:text-sm text-slate-400 mt-2">
               Ends: {new Date(contest.endTime).toLocaleString()}
             </p>
           </div>
-          <div className="text-right">
+          <div className="w-full sm:w-auto text-center sm:text-right">
             {status === "locked" && (
               <div className="badge badge-warning p-4 font-bold">
                 STARTS SOON
@@ -78,18 +78,18 @@ const ContestRoom = () => {
 
         {/* Dynamic Content Based on Time */}
         {status === "locked" ? (
-          <div className="text-center mt-32">
-            <div className="text-6xl mb-4">⏳</div>
-            <h2 className="text-4xl text-slate-400 font-bold mb-4">
+          <div className="text-center mt-20 sm:mt-32 px-4">
+            <div className="text-5xl sm:text-6xl mb-4">⏳</div>
+            <h2 className="text-2xl sm:text-4xl text-slate-400 font-bold mb-4">
               Contest is Locked
             </h2>
-            <p className="text-xl text-slate-500">
+            <p className="text-base sm:text-xl text-slate-500">
               Wait until the start time to see the problems.
             </p>
           </div>
         ) : (
           <div>
-            <h3 className="text-2xl font-bold mb-6 border-b border-slate-700 pb-2">
+            <h3 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 border-b border-slate-700 pb-2">
               Contest Problems
             </h3>
             <div className="grid grid-cols-1 gap-4">
@@ -99,7 +99,7 @@ const ContestRoom = () => {
                   onClick={() =>
                     status === "active" && navigate(`/problems/${prob._id}`)
                   }
-                  className={`p-6 rounded-xl border flex justify-between items-center transition
+                  className={`p-4 sm:p-6 rounded-xl border flex flex-col sm:flex-row justify-between items-start sm:items-center transition gap-4
                     ${
                       status === "active"
                         ? "bg-slate-800 border-slate-600 hover:border-blue-500 cursor-pointer"
@@ -107,10 +107,10 @@ const ContestRoom = () => {
                     }
                   `}
                 >
-                  <span className="text-xl font-semibold">
+                  <span className="text-lg sm:text-xl font-semibold text-left">
                     Problem {index + 1}: {prob.title}
                   </span>
-                  <span className="btn btn-sm btn-outline btn-primary">
+                  <span className="btn btn-sm btn-outline btn-primary w-full sm:w-auto">
                     {status === "active" ? "Solve Now" : "Review"}
                   </span>
                 </div>

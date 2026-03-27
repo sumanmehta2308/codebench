@@ -28,25 +28,27 @@ const EditProfile = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-800 text-white flex items-center justify-center py-8 ">
-      <div className="bg-gray-900 p-16 rounded-lg shadow-lg w-full max-w-md ">
-        <h2 className="text-3xl font-bold mb-8 text-center">Update Avatar</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="flex flex-col items-center mb-6">
+    <div className="min-h-screen bg-gray-800 text-white flex items-center justify-center p-4 py-8">
+      <div className="bg-gray-900 p-6 md:p-16 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-2xl md:text-3xl font-bold mb-8 text-center">
+          Update Avatar
+        </h2>
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="flex flex-col items-center mb-6 w-full">
             {preview ? (
               <img
                 src={preview}
                 alt="Avatar Preview"
-                className="h-48 w-64 rounded-lg mb-4 object-cover"
+                className="h-48 w-full max-w-[16rem] rounded-lg mb-4 object-cover"
               />
             ) : (
-              <div className="h-48 w-64 rounded-lg bg-gray-700 flex items-center justify-center mb-4">
+              <div className="h-48 w-full max-w-[16rem] rounded-lg bg-gray-700 flex items-center justify-center mb-4">
                 <span className="text-gray-400">No Avatar</span>
               </div>
             )}
             <label
               htmlFor="avatar"
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold my-2 py-3 px-4 rounded-lg cursor-pointer"
+              className="bg-blue-500 hover:bg-blue-600 text-white text-center font-bold my-2 py-3 px-4 rounded-lg cursor-pointer w-full sm:w-auto"
             >
               Choose Avatar
             </label>
@@ -60,7 +62,7 @@ const EditProfile = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg transition duration-300 ease-in-out"
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 md:py-2 rounded-lg transition duration-300 ease-in-out"
           >
             Update Avatar
           </button>

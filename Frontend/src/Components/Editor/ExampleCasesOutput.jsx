@@ -24,15 +24,15 @@ function ExampleCasesOutput({ exampleCasesExecution }) {
   }
 
   return (
-    <>
-      <h3 className="text-2xl font-extrabold text-white mb-4">
+    <div className="w-full">
+      <h3 className="text-xl md:text-2xl font-extrabold text-white mb-4">
         Execution Results
       </h3>
-      <div className="flex flex-wrap mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {testResults.map((execution, index) => (
           <button
             key={index}
-            className={`px-4 py-2 rounded-lg font-bold mr-2 mb-2 transition-all duration-300 ease-in-out flex items-center text-white ${
+            className={`px-3 py-2 md:px-4 md:py-2 rounded-lg font-bold text-sm md:text-base transition-all duration-300 ease-in-out flex items-center text-white flex-1 sm:flex-none justify-center ${
               visibleIndex === index ? "bg-blue-600 shadow-lg" : "bg-gray-800"
             }`}
             onClick={() => setVisibleIndex(index)}
@@ -49,36 +49,36 @@ function ExampleCasesOutput({ exampleCasesExecution }) {
 
       {testResults[visibleIndex] && (
         <div
-          className={`p-6 rounded-lg shadow-md text-white transition-all duration-500 ease-in-out ${
+          className={`p-4 md:p-6 rounded-lg shadow-md text-white transition-all duration-500 ease-in-out overflow-hidden w-full ${
             testResults[visibleIndex].isMatch ? "bg-green-900" : "bg-red-900"
           }`}
         >
-          <h4 className="font-semibold text-lg mb-4">
+          <h4 className="font-semibold text-base md:text-lg mb-4">
             Test Case {visibleIndex + 1}
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-sm">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs md:text-sm">
+            <div className="flex-1 overflow-hidden w-full">
               <span className="text-gray-400 block mb-1">Input:</span>
-              <pre className="bg-black bg-opacity-50 p-3 rounded-lg overflow-auto">
+              <pre className="bg-black bg-opacity-50 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap w-full">
                 {testResults[visibleIndex].input}
               </pre>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 overflow-hidden w-full">
               <span className="text-gray-400 block mb-1">Expected Output:</span>
-              <pre className="bg-black bg-opacity-50 p-3 rounded-lg overflow-auto">
+              <pre className="bg-black bg-opacity-50 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap w-full">
                 {testResults[visibleIndex].expectedOutput}
               </pre>
             </div>
-            <div className="flex-1">
+            <div className="flex-1 overflow-hidden w-full">
               <span className="text-gray-400 block mb-1">Actual Output:</span>
-              <pre className="bg-black bg-opacity-50 p-3 rounded-lg overflow-auto">
+              <pre className="bg-black bg-opacity-50 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap w-full">
                 {testResults[visibleIndex].actualOutput}
               </pre>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 export default ExampleCasesOutput;

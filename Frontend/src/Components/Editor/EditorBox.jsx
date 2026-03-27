@@ -95,33 +95,33 @@ function EditorBox({ problem, onSubmissionSuccess }) {
   if (isLoading) return <Loading />;
 
   return (
-    <div>
+    <div className="w-full">
       {!isLoggedIn() ? (
         <LoginToCode />
       ) : (
-        <div>
-          <div className="flex justify-between items-center bg-gray-900 border-b-2 border-gray-700 pb-4">
-            <div className="flex space-x-4 ">
+        <div className="w-full">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-gray-900 border-b-2 border-gray-700 pb-4 gap-4 px-2 md:px-0">
+            <div className="flex space-x-2 md:space-x-4 w-full md:w-auto">
               <button
                 onClick={clickRun}
-                className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                className="flex-1 md:flex-none px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
               >
                 Run
               </button>
               {problem && (
                 <button
                   onClick={submitCode}
-                  className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
+                  className="flex-1 md:flex-none px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
                 >
                   Submit
                 </button>
               )}
             </div>
-            <div className="flex space-x-4 items-center rounded-t-lg">
+            <div className="flex flex-wrap gap-2 md:gap-4 md:space-x-4 items-center rounded-t-lg w-full md:w-auto">
               <select
                 onChange={(e) => handleLanguageChange(e.target.value)}
                 value={language}
-                className="p-1 text-white bg-gray-800 border border-gray-600 rounded focus:outline-none focus:ring focus:ring-blue-500"
+                className="p-1 md:p-2 text-sm md:text-base text-white bg-gray-800 border border-gray-600 rounded focus:outline-none focus:ring focus:ring-blue-500 flex-1 md:flex-none"
               >
                 <option value="cpp">C++</option>
                 <option value="c">C</option>
@@ -132,7 +132,7 @@ function EditorBox({ problem, onSubmissionSuccess }) {
               <select
                 onChange={(e) => handleThemeChange(e.target.value)}
                 value={theme}
-                className="p-1 text-white bg-gray-800 border border-gray-600 rounded focus:outline-none focus:ring focus:ring-blue-500"
+                className="p-1 md:p-2 text-sm md:text-base text-white bg-gray-800 border border-gray-600 rounded focus:outline-none focus:ring focus:ring-blue-500 flex-1 md:flex-none"
               >
                 <option value="vs-dark">Dark</option>
                 <option value="light">Light</option>
@@ -140,7 +140,7 @@ function EditorBox({ problem, onSubmissionSuccess }) {
               </select>
 
               <button
-                className="px-2 py-1 text-white bg-blue-600 hover:bg-blue-700 border border-blue-500 rounded-lg shadow-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full md:w-auto px-2 py-2 text-sm md:text-base text-white bg-blue-600 hover:bg-blue-700 border border-blue-500 rounded-lg shadow-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 onClick={async () => {
                   await updateTemplateService(language, { code });
                   setIsLoading(true);
@@ -152,7 +152,7 @@ function EditorBox({ problem, onSubmissionSuccess }) {
             </div>
           </div>
 
-          <div className="p-5 bg-gray-800 rounded-lg shadow-lg my-4">
+          <div className="p-3 md:p-5 bg-gray-800 rounded-lg shadow-lg my-4 w-full">
             <Editor
               height="63vh"
               width="100%"
@@ -171,7 +171,7 @@ function EditorBox({ problem, onSubmissionSuccess }) {
             />
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 px-2 md:px-0">
             {submitting ? (
               <Executing text={"Submitting"} />
             ) : submissionStatus ? (

@@ -37,11 +37,11 @@ import ContestRoom from "./Components/Contest/ContestRoom.jsx";
 const router = createBrowserRouter(
   createRoutesFromElements(
     <>
-      {/* 🔴 Auth Routes (Rendered WITHOUT the Header) */}
+      {/* Auth Routes (Rendered WITHOUT the Header) */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* 🔵 Main Layout Routes (Rendered INSIDE App.jsx so they get the Header) */}
+      {/* Main Layout Routes (Rendered INSIDE App.jsx so they get the Header) */}
       <Route path="" element={<App />}>
         <Route path="/" element={<Home />} />
         <Route path="/profile" element={<Profile />} />
@@ -52,18 +52,18 @@ const router = createBrowserRouter(
         <Route path="/join-interview" element={<JoinInterview />} />
         <Route path="/host-interview" element={<HostInterview />} />
         <Route path="/loading" element={<Loading />} />
-        {/* 🏆 Contest Routes */}
+        {/*  Contest Routes */}
         <Route path="/contests" element={<ContestList />} />
         <Route path="/contest/:id" element={<ContestRoom />} />
 
-        {/* 🔒 Protected Admin Routes */}
+        {/*  Protected Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/add-problem" element={<CreateProblem />} />
         <Route path="/admin/edit-problem/:id" element={<CreateProblem />} />
         <Route path="/admin/create-contest" element={<CreateContest />} />
       </Route>
 
-      {/* 🟢 Full Screen Room Route (Rendered WITHOUT the Header for coding view) */}
+      {/* Full Screen Room Route (Rendered WITHOUT the Header for coding view) */}
       <Route path="/room/:roomId" element={<Room />} />
     </>
   )

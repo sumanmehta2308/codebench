@@ -8,14 +8,14 @@ import DiscussProblem from "./DiscussProblem.jsx";
 import EditorBox from "../Editor/EditorBox.jsx";
 import Submissions from "../Submission/Submissions.jsx";
 import ChatAi from "../ChatBot/ChatAi.jsx";
+
 const difficultyColors = {
   easy: "bg-green-500 text-white",
   medium: "bg-yellow-500 text-white",
   hard: "bg-red-600 text-white",
 };
 
-function Problem() 
-{
+function Problem() {
   const { id } = useParams();
   const [problem, setProblem] = useState(null);
   const [activeTab, setActiveTab] = useState("description");
@@ -41,31 +41,35 @@ function Problem()
   if (!problem) return <Loading />;
 
   return (
-    <div className="min-h-screen bg-gray-800 text-white flex p-8">
+    <div className="min-h-screen bg-gray-800 text-white flex flex-col lg:flex-row p-4 lg:p-8 gap-4 lg:gap-0">
       {/* Left Side: Tabs and Content */}
-      <div className="w-1/2 min-h-screen p-7 bg-gray-900 rounded-lg mr-3">
-        <div className="flex justify-between bg-gray-900 pb-4 border-b-2 border-gray-700 mb-4">
-          <div className="flex">
-            {["description", "solution", "discuss", "submissions" , "ai tutor"].map(
-              (tab) => (
-                <button
-                  key={tab}
-                  className={`mx-2 px-4 py-2 font-semibold rounded-lg transition duration-300 ${
-                    activeTab === tab
-                      ? "bg-yellow-500 text-white shadow-lg"
-                      : "bg-gray-600 text-gray-300 hover:bg-gray-500"
-                  }`}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              )
-            )}
+      <div className="w-full lg:w-1/2 min-h-screen p-4 md:p-7 bg-gray-900 rounded-lg lg:mr-3 flex flex-col overflow-hidden">
+        <div className="flex flex-wrap sm:flex-nowrap justify-between items-start sm:items-center bg-gray-900 pb-4 border-b-2 border-gray-700 mb-4 gap-4">
+          <div className="flex flex-wrap gap-2">
+            {[
+              "description",
+              "solution",
+              "discuss",
+              "submissions",
+              "ai tutor",
+            ].map((tab) => (
+              <button
+                key={tab}
+                className={`px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base font-semibold rounded-lg transition duration-300 ${
+                  activeTab === tab
+                    ? "bg-yellow-500 text-white shadow-lg"
+                    : "bg-gray-600 text-gray-300 hover:bg-gray-500"
+                }`}
+                onClick={() => setActiveTab(tab)}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
           </div>
           {solved && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-10 w-10 bg-black rounded-full"
+              className="h-8 w-8 md:h-10 md:w-10 bg-black rounded-full shrink-0"
               viewBox="0 0 20 20"
               fill="green"
             >
@@ -78,10 +82,12 @@ function Problem()
           )}
         </div>
 
-        <h1 className="text-4xl font-semibold mb-4">{problem.title}</h1>
+        <h1 className="text-2xl md:text-4xl font-semibold mb-4">
+          {problem.title}
+        </h1>
         <div className="flex items-center mb-4">
           <span
-            className={`text-sm font-semibold px-4 py-1 rounded ${
+            className={`text-xs md:text-sm font-semibold px-3 md:px-4 py-1 rounded ${
               difficultyColors[problem.difficulty]
             }`}
           >
@@ -90,21 +96,24 @@ function Problem()
         </div>
 
         {/* Tab Content Rendering */}
-        {activeTab === "description" && <Description problem={problem} />}
-        {activeTab === "solution" && <Solution solution={problem.solution} />}
-        {activeTab === "discuss" && <DiscussProblem id={id} />}
-        {activeTab === "submissions" && (
-          <Submissions
-            problem_id={id}
-            displayproblem={false}
-            key={refreshTrigger} // KEY FIX: Forces re-fetch when trigger changes
-          />
-        )}
-        {/* Render the ChatAi component when the tab is active */}
-        {activeTab === "ai tutor" && <ChatAi problem={problem} />}
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === "description" && <Description problem={problem} />}
+          {activeTab === "solution" && <Solution solution={problem.solution} />}
+          {activeTab === "discuss" && <DiscussProblem id={id} />}
+          {activeTab === "submissions" && (
+            <Submissions
+              problem_id={id}
+              displayproblem={false}
+              key={refreshTrigger} // KEY FIX: Forces re-fetch when trigger changes
+            />
+          )}
+          {/* Render the ChatAi component when the tab is active */}
+          {activeTab === "ai tutor" && <ChatAi problem={problem} />}
+        </div>
       </div>
+
       {/* Right Side: Monaco Editor */}
-      <div className="w-1/2 min-h-screen p-7 bg-gray-900 ml-3 rounded-lg">
+      <div className="w-full lg:w-1/2 min-h-screen p-4 md:p-7 bg-gray-900 lg:ml-3 rounded-lg mt-4 lg:mt-0 flex flex-col overflow-hidden">
         <EditorBox
           problem={problem}
           onSubmissionSuccess={handleSubmissionSuccess} // Passing callback

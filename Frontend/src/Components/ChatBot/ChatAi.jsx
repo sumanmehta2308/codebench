@@ -75,7 +75,8 @@ const ChatAi = ({ problem }) => {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4B5563; }
       `}</style>
 
-      <div className="flex flex-col h-[60vh] min-h-[400px] w-full bg-[#0b141a] rounded-lg overflow-hidden shadow-2xl border border-gray-700">
+      {/* Made height adaptable on smaller screens */}
+      <div className="flex flex-col h-[70vh] sm:h-[60vh] min-h-[400px] w-full bg-[#0b141a] rounded-lg overflow-hidden shadow-2xl border border-gray-700">
         {/* Header */}
         <div className="bg-[#202c33] px-4 py-3 flex items-center gap-3 border-b border-gray-700 shadow-sm z-10 shrink-0">
           <div className="w-9 h-9 rounded-full bg-[#00a884] flex items-center justify-center text-white font-bold text-sm shadow-lg">
@@ -100,8 +101,9 @@ const ChatAi = ({ problem }) => {
                 msg.role === "user" ? "justify-end" : "justify-start"
               }`}
             >
+              {/* Made max width smaller on mobile so bubbles don't stretch the full screen */}
               <div
-                className={`max-w-[85%] px-4 py-2.5 shadow-md ${
+                className={`max-w-[95%] sm:max-w-[85%] px-4 py-2.5 shadow-md ${
                   msg.role === "user"
                     ? "bg-[#005c4b] text-[#e9edef] rounded-t-xl rounded-bl-xl rounded-br-sm"
                     : "bg-[#202c33] text-[#e9edef] rounded-t-xl rounded-br-xl rounded-bl-sm"
@@ -155,7 +157,7 @@ const ChatAi = ({ problem }) => {
               type="text"
               placeholder="Type a message..."
               {...register("message", { required: true })}
-              className="input w-full bg-[#2a3942] text-[#e9edef] placeholder-[#8696a0] focus:outline-none rounded-full border-none px-5 h-11 text-[14.5px] shadow-inner"
+              className="input w-full bg-[#2a3942] text-[#e9edef] placeholder-[#8696a0] focus:outline-none rounded-full border-none px-4 sm:px-5 h-11 text-[14.5px] shadow-inner"
               autoComplete="off"
             />
             <button
@@ -164,7 +166,7 @@ const ChatAi = ({ problem }) => {
               className="w-11 h-11 flex items-center justify-center rounded-full bg-[#00a884] hover:bg-[#008f6f] transition-all duration-200 shrink-0 shadow-lg disabled:opacity-50 disabled:scale-95"
             >
               <svg
-                xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)"
+                xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="white"
                 className="w-5 h-5 ml-0.5"

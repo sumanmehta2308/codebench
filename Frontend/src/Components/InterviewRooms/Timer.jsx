@@ -60,27 +60,27 @@ const Timer = ({ previlige, remoteSocketId }) => {
   };
 
   return (
-    <div className="flex flex-col items-center pb-2 bg-gray-800 rounded-lg text-white">
-      <div className="px-4 py-2 bg-black rounded-lg text-4xl font-semibold mb-4">
+    <div className="flex flex-col items-center pb-2 bg-gray-800 rounded-lg text-white w-full">
+      <div className="px-4 py-2 bg-black rounded-lg text-3xl md:text-4xl font-semibold mb-4 w-full text-center">
         {formatTime(time)}
       </div>
       {previlige && (
-        <div className="flex space-x-1">
+        <div className="flex flex-wrap justify-center gap-2 space-x-0 md:space-x-1 w-full">
           <button
             onClick={handleStart}
-            className="bg-green-500 text-white py-1 px-2 rounded-lg text-xs hover:bg-green-600"
+            className="bg-green-500 text-white py-1.5 px-3 rounded-lg text-xs hover:bg-green-600 flex-1 sm:flex-none"
           >
             Start
           </button>
           <button
             onClick={handleStop}
-            className="bg-red-500 text-white py-1 px-2 rounded-lg text-xs hover:bg-red-600"
+            className="bg-red-500 text-white py-1.5 px-3 rounded-lg text-xs hover:bg-red-600 flex-1 sm:flex-none"
           >
             Stop
           </button>
           <button
             onClick={handleReset}
-            className="bg-blue-500 text-white py-1 px-2 rounded-lg text-xs hover:bg-blue-600"
+            className="bg-blue-500 text-white py-1.5 px-3 rounded-lg text-xs hover:bg-blue-600 flex-1 sm:flex-none"
           >
             Reset
           </button>
@@ -90,7 +90,7 @@ const Timer = ({ previlige, remoteSocketId }) => {
             value={inputTime}
             onChange={(e) => setInputTime(e.target.value)}
             placeholder="Mins"
-            className="px-2 py-1 w-16 rounded-md text-black text-xs"
+            className="px-2 py-1.5 w-16 md:w-20 rounded-md text-black text-xs md:text-sm text-center"
           />
         </div>
       )}
