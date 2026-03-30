@@ -55,8 +55,11 @@ const ContestRoom = () => {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
               {contest.title}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-2">
-              Ends: {new Date(contest.endTime).toLocaleString()}
+            {/*  FIX 1: Show start time if locked, end time if active/ended */}
+            <p className="text-xs sm:text-sm text-slate-400 mt-2 font-medium">
+              {status === "locked"
+                ? `Starts: ${new Date(contest.startTime).toLocaleString()}`
+                : `Ends: ${new Date(contest.endTime).toLocaleString()}`}
             </p>
           </div>
           <div className="w-full sm:w-auto text-center sm:text-right">
@@ -78,14 +81,24 @@ const ContestRoom = () => {
 
         {/* Dynamic Content Based on Time */}
         {status === "locked" ? (
-          <div className="text-center mt-20 sm:mt-32 px-4">
-            <div className="text-5xl sm:text-6xl mb-4">⏳</div>
-            <h2 className="text-2xl sm:text-4xl text-slate-400 font-bold mb-4">
+          <div className="text-center mt-20 sm:mt-32 px-4 flex flex-col items-center">
+            <div className="text-5xl sm:text-6xl mb-4 animate-bounce">⏳</div>
+            <h2 className="text-2xl sm:text-4xl text-slate-300 font-bold mb-3">
               Contest is Locked
             </h2>
-            <p className="text-base sm:text-xl text-slate-500">
-              Wait until the start time to see the problems.
+            <p className="text-base sm:text-lg text-slate-500 mb-8">
+              The problems will be revealed when the contest begins.
             </p>
+
+            {/*FIX 2: Added a sleek box to prominently display the start time */}
+            <div className="inline-block bg-slate-800/80 px-8 py-5 rounded-2xl border border-blue-500/30 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+              <p className="text-xs text-blue-400/80 uppercase tracking-widest font-bold mb-1">
+                Starting At
+              </p>
+              <p className="text-xl sm:text-2xl font-black text-blue-400">
+                {new Date(contest.startTime).toLocaleString()}
+              </p>
+            </div>
           </div>
         ) : (
           <div>

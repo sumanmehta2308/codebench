@@ -36,12 +36,13 @@ const CreateContest = () => {
   const onSubmit = async (data) => {
     const formattedData = {
       ...data,
+      startTime: new Date(`${data.startTime}+05:30`).toISOString(),
+      endTime: new Date(`${data.endTime}+05:30`).toISOString(),
       problems: Array.isArray(data.problems) ? data.problems : [data.problems],
     };
 
     const response = await createContestService(formattedData);
     if (response) {
-      toast.success("Contest Scheduled Successfully!");
       navigate("/admin");
     }
   };

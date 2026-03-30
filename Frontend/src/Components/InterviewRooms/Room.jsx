@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useSelector } from "react-redux"; // 庁 Using Redux instead of useSocket!
+import { useSelector } from "react-redux";
 import Editor from "@monaco-editor/react";
 import Timer from "./Timer.jsx";
 import { runExampleCasesService } from "../../Services/CodeRun.service.js";
@@ -18,7 +18,7 @@ function Room() {
   const location = useLocation();
   const extraInfo = location.state;
 
-  // 庁 Grab socket and user cleanly from the Redux backpack
+  // Grab socket and user from Redux
   const { socket, user } = useSelector((state) => state.auth);
 
   const [question, setquestion] = useState("");
@@ -42,23 +42,33 @@ function Room() {
   const [language, setLanguage] = useState("cpp");
   const [theme, setTheme] = useState("vs-dark");
   const [executing, setExecuting] = useState(false);
-  const [copySuccess, setCopySuccess] = useState(false);
   const [showQuestion, setShowQuestion] = useState(false);
 
+  // 💡 FIX 1: Notify the Host as soon as the Interviewee enters
   useEffect(() => {
-    // 庁 No more localStorage! Just using 'user' directly from Redux
-    if (extraInfo && user && extraInfo._id === user._id) {
+    if (socket && user && extraInfo?.isJoining) {
+      socket.emit("join-room", { room: roomId, user });
+    }
+  }, [socket, user, roomId, extraInfo]);
+
+  // 💡 FIX 2: Correct Role Identification
+  useEffect(() => {
+    if (
+      extraInfo &&
+      user &&
+      extraInfo._id === user._id &&
+      !extraInfo.isJoining
+    ) {
       setprevilige(true);
     } else if (extraInfo) {
       set_show_share_streams(1);
       enterFullScreen();
-      setremoteSocketId(extraInfo);
-      setconnectionReady(true);
     }
-  }, [remoteSocketId, extraInfo, user]);
+  }, [extraInfo, user]);
 
   const handleJoinRequest = ({ user, id, requser_id }) => {
     setrequestusername((prev) => [...prev, { user, id, requser_id }]);
+    toast.success(`${user.fullname} wants to join!`, { duration: 5000 });
   };
 
   const acceptrequest = (index) => {
@@ -150,7 +160,7 @@ function Room() {
   };
 
   useEffect(() => {
-    if (!socket) return; // 庁 Added safety check
+    if (!socket) return;
 
     socket.on("user:requested_to_join", handleJoinRequest);
     socket.on("host:hasleft", help1);
@@ -179,6 +189,13 @@ function Room() {
       if (previlige) set_show_share_streams(1);
     });
 
+    // 💡 FIX: Sync Remote Socket ID for Interviewee
+    socket.on("host:req_accepted", ({ ta }) => {
+      setremoteSocketId(ta);
+      setconnectionReady(true);
+      toast.success("Connection Established!");
+    });
+
     return () => {
       socket.off("user:requested_to_join", handleJoinRequest);
       socket.off("host:hasleft", help1);
@@ -193,6 +210,7 @@ function Room() {
       socket.off("peer:nego:needed");
       socket.off("peer:nego:final");
       socket.off("set:share_streams");
+      socket.off("host:req_accepted");
     };
   }, [socket, remoteSocketId, mystream, previlige]);
 
@@ -236,11 +254,10 @@ function Room() {
     const response = await runExampleCasesService(language, code, cases);
     if (response) {
       setExampleCasesExecution(response);
-      if (!previlige)
-        socket.emit("code:run", {
-          remoteSocketId,
-          exampleCasesExecution: response,
-        });
+      socket.emit("code:run", {
+        remoteSocketId,
+        exampleCasesExecution: response,
+      });
     }
     setExecuting(false);
   };
@@ -261,7 +278,7 @@ function Room() {
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && !previlige) {
-        toast.error("You Tried to exit Fullscreen");
+        toast.error("Fullscreen exited - Ending Session");
         socket.emit("interviewee:leave", {
           remoteSocketId,
           room: roomId,
@@ -271,7 +288,7 @@ function Room() {
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden" && !previlige) {
-        toast.error("You tried to switch Tab");
+        toast.error("Tab switch detected - Ending Session");
         socket.emit("interviewee:leave", {
           remoteSocketId,
           room: roomId,
@@ -292,7 +309,7 @@ function Room() {
   return (
     <div className="min-h-screen lg:h-screen p-4 md:p-6 bg-gray-800 flex flex-col lg:flex-row text-white justify-between lg:justify-evenly gap-4 lg:gap-0 overflow-y-auto lg:overflow-hidden">
       {/* Left Column: Tools & Test Cases */}
-      <div className="bg-gray-900 p-4 md:p-6 rounded-lg w-full lg:w-1/4 flex flex-col order-2 lg:order-1 overflow-y-auto">
+      <div className="bg-gray-900 p-4 md:p-6 rounded-lg w-full lg:w-1/4 flex flex-col order-2 lg:order-1 overflow-y-auto border border-gray-700">
         <div className="flex flex-col space-y-4 md:space-y-6">
           <div className="flex items-center justify-evenly space-x-2 md:space-x-4">
             <button
@@ -332,7 +349,7 @@ function Room() {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-xl md:text-2xl font-extrabold text-gray-300 text-center">
+            <h3 className="text-xl md:text-2xl font-extrabold text-gray-300 text-center uppercase tracking-tighter">
               Test Cases
             </h3>
             {executing ? (
@@ -343,7 +360,7 @@ function Room() {
                   exampleCasesExecution={exampleCasesExecution}
                 />
                 <button
-                  className="mt-2 px-3 py-1.5 rounded-lg bg-blue-600 w-full sm:w-auto"
+                  className="mt-2 px-3 py-1.5 rounded-lg bg-blue-600 w-full sm:w-auto font-bold"
                   onClick={() => setExampleCasesExecution(null)}
                 >
                   Reset
@@ -353,7 +370,7 @@ function Room() {
               cases.map((exampleCase, index) => (
                 <div
                   key={exampleCase.id}
-                  className="bg-gray-700 p-3 rounded-lg space-y-2"
+                  className="bg-gray-700 p-3 rounded-lg space-y-2 border border-gray-600"
                 >
                   <input
                     type="text"
@@ -362,7 +379,7 @@ function Room() {
                     onChange={(e) =>
                       handleInputChange(index, "input", e.target.value)
                     }
-                    className="w-full p-1.5 rounded-md bg-gray-800 text-sm border border-gray-600"
+                    className="w-full p-2 rounded-md bg-gray-800 text-sm border border-gray-600 focus:border-blue-500 outline-none"
                   />
                   <input
                     type="text"
@@ -371,12 +388,12 @@ function Room() {
                     onChange={(e) =>
                       handleInputChange(index, "output", e.target.value)
                     }
-                    className="w-full p-1.5 rounded-md bg-gray-800 text-sm border border-gray-600"
+                    className="w-full p-2 rounded-md bg-gray-800 text-sm border border-gray-600 focus:border-blue-500 outline-none"
                   />
                 </div>
               ))
             )}
-            <div className="bg-gray-800 p-2 rounded-lg shadow-lg">
+            <div className="bg-gray-800 p-2 rounded-lg shadow-lg border border-gray-700">
               <Timer previlige={previlige} remoteSocketId={remoteSocketId} />
             </div>
           </div>
@@ -384,38 +401,36 @@ function Room() {
       </div>
 
       {/* Middle Column: Editor */}
-      <div className="px-4 md:px-6 bg-gray-900 mx-0 lg:mx-4 rounded-lg p-4 md:p-8 w-full lg:w-1/2 order-1 lg:order-2 flex flex-col h-[60vh] lg:h-full">
-        <div className="flex justify-between items-center border-b-2 border-gray-700 pb-4 mb-4">
+      <div className="px-4 md:px-6 bg-gray-900 mx-0 lg:mx-4 rounded-lg p-4 md:p-8 w-full lg:w-1/2 order-1 lg:order-2 flex flex-col h-[60vh] lg:h-full border border-gray-700">
+        <div className="flex justify-between items-center border-b-2 border-gray-700 pb-4 mb-4 gap-2">
           <div className="flex space-x-2">
             <button
               onClick={clickRun}
-              className="px-3 md:px-4 py-1.5 md:py-2 bg-green-600 rounded-lg text-xs md:text-sm font-bold"
+              className="px-4 md:px-6 py-1.5 md:py-2 bg-green-600 rounded-lg text-xs md:text-sm font-bold hover:bg-green-500"
             >
               Run
             </button>
             <button
               onClick={() => setShowQuestion(!showQuestion)}
-              className="px-3 md:px-4 py-1.5 md:py-2 bg-blue-600 rounded-lg text-xs md:text-sm font-bold"
+              className="px-4 md:px-6 py-1.5 md:py-2 bg-blue-600 rounded-lg text-xs md:text-sm font-bold hover:bg-blue-500"
             >
               Question
             </button>
           </div>
-          <div className="flex space-x-2">
-            <select
-              onChange={(e) => handleLanguageChange(e.target.value)}
-              value={language}
-              className="p-1 md:p-1.5 bg-gray-800 border border-gray-600 rounded text-xs md:text-sm"
-            >
-              <option value="cpp">C++</option>
-              <option value="c">C</option>
-              <option value="java">Java</option>
-              <option value="python">Python</option>
-            </select>
-          </div>
+          <select
+            onChange={(e) => handleLanguageChange(e.target.value)}
+            value={language}
+            className="p-1 md:p-1.5 bg-gray-800 border border-gray-600 rounded text-xs md:text-sm font-bold text-blue-400"
+          >
+            <option value="cpp">C++</option>
+            <option value="c">C</option>
+            <option value="java">Java</option>
+            <option value="python">Python</option>
+          </select>
         </div>
 
         {showQuestion && (
-          <div className="absolute z-50 mt-4 w-[90%] lg:w-1/2 max-h-[500px] overflow-y-auto bg-white text-black rounded-lg p-4 md:p-6 shadow-2xl">
+          <div className="absolute z-50 mt-16 w-[90%] lg:w-1/2 max-h-[500px] overflow-y-auto bg-gray-900 text-white rounded-xl p-4 md:p-8 shadow-2xl border border-blue-500/30 backdrop-blur-xl">
             {previlige ? (
               <textarea
                 value={question}
@@ -426,17 +441,18 @@ function Room() {
                     question: e.target.value,
                   });
                 }}
-                className="w-full h-64 md:h-80 p-2 border border-gray-300 rounded text-sm md:text-base"
+                className="w-full h-64 md:h-80 p-4 bg-gray-800 border border-gray-700 rounded-lg text-sm md:text-base outline-none focus:border-blue-500"
+                placeholder="Type your question here..."
               />
             ) : (
-              <p className="whitespace-pre-wrap text-sm md:text-base">
-                {question}
+              <p className="whitespace-pre-wrap text-sm md:text-base leading-relaxed">
+                {question || "No question provided yet..."}
               </p>
             )}
           </div>
         )}
 
-        <div className="flex-1 min-h-[300px] lg:min-h-0">
+        <div className="flex-1 min-h-[300px] lg:min-h-0 rounded-lg overflow-hidden border border-gray-700">
           <Editor
             height="100%"
             language={language}
@@ -456,14 +472,17 @@ function Room() {
       </div>
 
       {/* Right Column: Videos & Connection Status */}
-      <div className="w-full lg:w-1/4 bg-gray-900 p-4 rounded-lg order-3 flex flex-col overflow-y-auto">
+      <div className="w-full lg:w-1/4 bg-gray-900 p-4 rounded-lg order-3 flex flex-col overflow-y-auto border border-gray-700">
         {connectionReady ? (
           <div className="flex flex-col space-y-4">
-            <div className="bg-gray-800 p-3 rounded-lg">
-              <p className="text-center text-xs md:text-sm mb-2">
-                {remoteUser ? remoteUser.fullname : "Interviewer"}
+            <div className="bg-gray-800 p-3 rounded-lg border border-gray-700 relative">
+              <span className="absolute top-2 left-2 bg-blue-600/20 text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                Remote
+              </span>
+              <p className="text-center text-xs md:text-sm mb-2 font-bold text-gray-400">
+                {remoteUser ? remoteUser.fullname : "Peer"}
               </p>
-              <div className="h-40 md:h-48 bg-black rounded-lg flex items-center justify-center overflow-hidden">
+              <div className="h-40 md:h-48 bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-900 shadow-inner">
                 {remoteStream ? (
                   <video
                     ref={(v) => {
@@ -474,13 +493,20 @@ function Room() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <p className="text-xs text-gray-500">Video Off</p>
+                  <p className="text-xs text-gray-600 animate-pulse">
+                    Waiting for video...
+                  </p>
                 )}
               </div>
             </div>
-            <div className="bg-gray-800 p-3 rounded-lg">
-              <p className="text-center text-xs md:text-sm mb-2">You</p>
-              <div className="h-40 md:h-48 bg-black rounded-lg flex items-center justify-center overflow-hidden">
+            <div className="bg-gray-800 p-3 rounded-lg border border-gray-700 relative">
+              <span className="absolute top-2 left-2 bg-green-600/20 text-green-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                You
+              </span>
+              <p className="text-center text-xs md:text-sm mb-2 font-bold text-gray-400">
+                Self View
+              </p>
+              <div className="h-40 md:h-48 bg-black rounded-lg flex items-center justify-center overflow-hidden border border-gray-900">
                 {isVideoOn ? (
                   <ReactPlayer
                     playing={isVideoOn}
@@ -490,56 +516,72 @@ function Room() {
                     url={mystream}
                   />
                 ) : (
-                  <p className="text-xs text-gray-500">Video Off</p>
+                  <p className="text-xs text-gray-600">Camera Off</p>
                 )}
               </div>
             </div>
             {show_share_streams === 1 && (
               <button
                 onClick={sendstreams}
-                className="w-full py-2 bg-blue-600 rounded-lg text-sm font-semibold"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-black uppercase tracking-widest shadow-lg transition-all"
               >
-                Share Stream
+                Start Video Call
               </button>
             )}
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="bg-green-600 p-3 rounded-lg flex justify-between items-center break-all">
-              <p className="font-bold text-sm md:text-base mr-2">
-                Room: {roomId}
-              </p>
+            <div className="bg-blue-600/20 border border-blue-500/50 p-4 rounded-xl flex justify-between items-center gap-2">
+              <div className="overflow-hidden">
+                <p className="text-[10px] uppercase font-black text-blue-400 mb-0.5">
+                  Room identity
+                </p>
+                <p className="font-mono text-lg font-bold truncate">{roomId}</p>
+              </div>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(roomId);
                   toast.success("Copied!");
                 }}
-                className="p-1.5 md:p-2 bg-white rounded shrink-0"
+                className="p-2 bg-blue-600 hover:bg-blue-500 rounded-lg shrink-0 shadow-md"
               >
-                <img className="w-4 md:w-5" src="/copy.png" alt="copy" />
+                <img className="w-5" src="/copy.png" alt="copy" />
               </button>
             </div>
-            <div className="bg-gray-800 p-4 rounded-lg">
-              <p className="text-sm font-bold mb-3">Join Requests</p>
-              {requsername.length === 0 && (
-                <p className="text-xs text-gray-400">No requests yet.</p>
-              )}
-              {requsername.map((x, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-gray-700 p-3 rounded mb-2 gap-2 sm:gap-0"
-                >
-                  <p className="text-xs md:text-sm font-semibold">
-                    {x.user.fullname}
+
+            {/* 💡 POPUP AREA: Join Requests */}
+            <div className="bg-gray-800 p-4 rounded-xl border border-gray-700 shadow-xl">
+              <p className="text-sm font-black uppercase text-gray-500 mb-4 tracking-widest">
+                Awaiting Participants
+              </p>
+              {requsername.length === 0 ? (
+                <div className="py-8 text-center bg-gray-900/50 rounded-lg border border-dashed border-gray-700">
+                  <p className="text-xs text-gray-500 italic">
+                    Waiting for interviewee to join...
                   </p>
-                  <button
-                    onClick={() => acceptrequest(i)}
-                    className="w-full sm:w-auto px-3 py-1.5 bg-green-600 rounded text-xs md:text-sm font-bold"
-                  >
-                    Accept
-                  </button>
                 </div>
-              ))}
+              ) : (
+                requsername.map((x, i) => (
+                  <div
+                    key={i}
+                    className="flex flex-col items-center bg-gray-700/50 border border-emerald-500/30 p-4 rounded-lg mb-2 animate-in fade-in slide-in-from-bottom-2"
+                  >
+                    <img
+                      src={x.user.avatar || "/defaultuser.png"}
+                      className="w-12 h-12 rounded-full border-2 border-emerald-500 mb-2 shadow-lg"
+                    />
+                    <p className="text-sm font-bold text-white mb-3 text-center">
+                      {x.user.fullname}
+                    </p>
+                    <button
+                      onClick={() => acceptrequest(i)}
+                      className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-xs font-black uppercase tracking-widest text-white shadow-lg transition-all"
+                    >
+                      Accept & Call
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}

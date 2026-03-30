@@ -51,7 +51,7 @@ const ContestList = () => {
                   </div>
                   <button
                     onClick={() => navigate(`/contest/${contest._id}`)}
-                    className="btn btn-primary px-8 w-full sm:w-auto mt-2 sm:mt-0"
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-8 rounded-lg w-full sm:w-auto mt-4 sm:mt-0 transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:shadow-[0_0_25px_rgba(37,99,235,0.6)] hover:-translate-y-1"
                   >
                     Enter Room
                   </button>

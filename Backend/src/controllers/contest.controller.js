@@ -26,7 +26,7 @@ const createContest = asyncHandler(async (req, res) => {
 
 const getActiveContests = asyncHandler(async (req, res) => {
   const now = new Date();
-  // Find contests where now is before endTime
+  // Show all contests that haven't ended yet (includes upcoming/locked ones)
   const contests = await Contest.find({
     endTime: { $gte: now },
   }).sort({ startTime: 1 });
@@ -36,4 +36,23 @@ const getActiveContests = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, contests, "Active contests fetched"));
 });
 
-module.exports = { createContest, getActiveContests };
+// 💡 NEW: Fetch a single contest by ID so the "Enter Room" button works
+const getContestById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // We use .populate("problems") so the frontend can see problem names if active
+  const contest = await Contest.findById(id).populate("problems");
+
+  if (!contest) {
+    throw new ApiError(404, "Contest not found");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, contest, "Contest details fetched successfully")
+    );
+});
+
+// 💡 Added getContestById to the exports
+module.exports = { createContest, getActiveContests, getContestById };
